@@ -17,13 +17,12 @@
 #define CAV_INCLUDE_UTIL_FUNCTIONS_HPP
 
 #include <cstring>
-#include <type_traits>
 #include <utility>
 
-namespace cft {
+namespace cav {
 
-#define CFT_REQUIRES(...)      typename std::enable_if<(__VA_ARGS__)>::type
-#define CFT_REQUIRES_T(T, ...) typename std::enable_if<(__VA_ARGS__), T>::type
+#define CAV_REQUIRES(...)      typename std::enable_if<(__VA_ARGS__)>::type
+#define CAV_REQUIRES_T(T, ...) typename std::enable_if<(__VA_ARGS__), T>::type
 
 template <typename T>
 using no_cvr = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
@@ -53,8 +52,7 @@ template <typename T2, typename T1>
 static T2 bit_cast(T1 t1) {
     static_assert(sizeof(T1) == sizeof(T2), "Types must match sizes");
     T2 t2;
-    std::memcpy(std::addressof(t2), std::addressof(t1),
-                sizeof(T1));  // pre c++20 type-punning
+    std::memcpy(std::addressof(t2), std::addressof(t1), sizeof(T1));  // pre c++20 type-punning
     return t2;
 }
 
@@ -134,6 +132,6 @@ struct IdentityFtor {
     }
 };
 
-}  // namespace cft
+}  // namespace cav
 
 #endif /* CAV_INCLUDE_UTIL_FUNCTIONS_HPP */

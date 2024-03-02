@@ -1,10 +1,25 @@
-#ifndef CFT_INCLUDE_SPAN_HPP
-#define CFT_INCLUDE_SPAN_HPP
+// Copyright (c) 2024 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+#ifndef CAV_INCLUDE_SPAN_HPP
+#define CAV_INCLUDE_SPAN_HPP
 
 #include <cassert>
 #include <iterator>
 
-namespace cft {
+namespace cav {
 
 /// @brief A simple non-owning span
 template <typename ItT>
@@ -57,6 +72,6 @@ template <typename ItT>
     return {beg, beg + sz};
 }
 
-}  // namespace cft
+}  // namespace cav
 
-#endif /* CFT_INCLUDE_SPAN_HPP */
+#endif /* CAV_INCLUDE_SPAN_HPP */

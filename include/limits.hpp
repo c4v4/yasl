@@ -13,12 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef CFT_INCLUDE_LIMITS_HPP
-#define CFT_INCLUDE_LIMITS_HPP
+#ifndef CAV_INCLUDE_LIMITS_HPP
+#define CAV_INCLUDE_LIMITS_HPP
 
 #include <limits>
 
-namespace cft {
+namespace cav {
 
 /// @brief Syntactic sugar for numeric max and min values.
 ///  It can be extended to defined max and min for other types.
@@ -37,6 +37,6 @@ struct limits {
     }
 };
 
-}  // namespace cft
+}  // namespace cav
 
-#endif /* CFT_INCLUDE_LIMITS_HPP */
+#endif /* CAV_INCLUDE_LIMITS_HPP */

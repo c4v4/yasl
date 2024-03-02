@@ -1,6 +1,6 @@
 
 CompileFlags:  
-  Add: ["-std=c++11"]
+  Add: ["-std=c++17"]
 Diagnostics:
     UnusedIncludes: Strict
     ClangTidy: 

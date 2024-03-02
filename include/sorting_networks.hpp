@@ -104,8 +104,8 @@
 ///    4: Std::sort: 5446, jump sort: 507, switch sort: 722
 ///    5: Std::sort: 5960, jump sort: 496, switch sort: 668
 
-#ifndef CFT_INCLUDE_UTILS_SORTING_NETWORKS_HPP
-#define CFT_INCLUDE_UTILS_SORTING_NETWORKS_HPP
+#ifndef CAV_INCLUDE_UTILS_SORTING_NETWORKS_HPP
+#define CAV_INCLUDE_UTILS_SORTING_NETWORKS_HPP
 
 #include <cstring>
 #include <type_traits>
@@ -113,11 +113,19 @@
 
 #include "util_functions.hpp"
 
-namespace cft { namespace netsort {
+
+#ifndef NDEBUG
+#define CAV_MAX_NET_SIZE 8U
+#else
+#define CAV_MAX_NET_SIZE 32U
+#endif
+
+namespace cav {
+namespace netsort {
 
     template <typename C, typename Key>
-    auto cmp_swap(C& c, Key&& key, size_t i1, size_t i2)
-        -> CFT_REQUIRES(std::is_fundamental<container_value_type_t<C>>::value ||
+    auto cmp_swap(C& c, Key key, uint8_t i1, uint8_t i2)
+        -> CAV_REQUIRES(std::is_fundamental<container_value_type_t<C>>::value ||
                         !std::is_trivially_copyable<container_value_type_t<C>>::value) {
         auto k1  = key(c[i1]);
         auto k2  = key(c[i2]);
@@ -127,8 +135,8 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    auto cmp_swap(C& c, Key&& key, size_t i1, size_t i2)
-        -> CFT_REQUIRES(!std::is_fundamental<container_value_type_t<C>>::value &&
+    auto cmp_swap(C& c, Key key, uint8_t i1, uint8_t i2)
+        -> CAV_REQUIRES(!std::is_fundamental<container_value_type_t<C>>::value &&
                         std::is_trivially_copyable<container_value_type_t<C>>::value) {
         if (key(c[i1]) > key(c[i2])) {
             char tmp[sizeof(container_value_type_t<C>)];
@@ -139,27 +147,27 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s0(C& /*unused*/, Key&& /*unused*/) {
+    void s0(C& /*unused*/, Key /*unused*/) {
     }
 
     template <typename C, typename Key>
-    void s1(C& /*unused*/, Key&& /*unused*/) {
+    void s1(C& /*unused*/, Key /*unused*/) {
     }
 
     template <typename C, typename Key>
-    void s2(C& c, Key&& key) {
+    void s2(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
     }
 
     template <typename C, typename Key>
-    void s3(C& c, Key&& key) {
+    void s3(C& c, Key key) {
         cmp_swap(c, key, 0, 2);
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 1, 2);
     }
 
     template <typename C, typename Key>
-    void s4(C& c, Key&& key) {
+    void s4(C& c, Key key) {
         cmp_swap(c, key, 0, 2);
         cmp_swap(c, key, 1, 3);
         cmp_swap(c, key, 0, 1);
@@ -168,7 +176,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s5(C& c, Key&& key) {
+    void s5(C& c, Key key) {
         cmp_swap(c, key, 0, 3);
         cmp_swap(c, key, 1, 4);
         cmp_swap(c, key, 0, 2);
@@ -181,7 +189,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s6(C& c, Key&& key) {
+    void s6(C& c, Key key) {
         cmp_swap(c, key, 0, 5);
         cmp_swap(c, key, 1, 3);
         cmp_swap(c, key, 2, 4);
@@ -197,7 +205,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s7(C& c, Key&& key) {
+    void s7(C& c, Key key) {
         cmp_swap(c, key, 0, 6);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -217,7 +225,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s8(C& c, Key&& key) {
+    void s8(C& c, Key key) {
         cmp_swap(c, key, 0, 2);
         cmp_swap(c, key, 1, 3);
         cmp_swap(c, key, 4, 6);
@@ -240,7 +248,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s9(C& c, Key&& key) {
+    void s9(C& c, Key key) {
         cmp_swap(c, key, 0, 3);
         cmp_swap(c, key, 1, 7);
         cmp_swap(c, key, 2, 5);
@@ -269,7 +277,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s10(C& c, Key&& key) {
+    void s10(C& c, Key key) {
         cmp_swap(c, key, 0, 8);
         cmp_swap(c, key, 1, 9);
         cmp_swap(c, key, 2, 7);
@@ -302,7 +310,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s11(C& c, Key&& key) {
+    void s11(C& c, Key key) {
         cmp_swap(c, key, 0, 9);
         cmp_swap(c, key, 1, 6);
         cmp_swap(c, key, 2, 4);
@@ -341,7 +349,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s12(C& c, Key&& key) {
+    void s12(C& c, Key key) {
         cmp_swap(c, key, 0, 8);
         cmp_swap(c, key, 1, 7);
         cmp_swap(c, key, 2, 6);
@@ -385,7 +393,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s13(C& c, Key&& key) {
+    void s13(C& c, Key key) {
         cmp_swap(c, key, 0, 11);
         cmp_swap(c, key, 1, 7);
         cmp_swap(c, key, 2, 4);
@@ -435,7 +443,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s14(C& c, Key&& key) {
+    void s14(C& c, Key key) {
         cmp_swap(c, key, 0, 3);
         cmp_swap(c, key, 1, 9);
         cmp_swap(c, key, 2, 6);
@@ -491,7 +499,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s15(C& c, Key&& key) {
+    void s15(C& c, Key key) {
         cmp_swap(c, key, 0, 6);
         cmp_swap(c, key, 1, 10);
         cmp_swap(c, key, 2, 14);
@@ -552,7 +560,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s16(C& c, Key&& key) {
+    void s16(C& c, Key key) {
         cmp_swap(c, key, 0, 5);
         cmp_swap(c, key, 1, 4);
         cmp_swap(c, key, 2, 12);
@@ -617,7 +625,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s17(C& c, Key&& key) {
+    void s17(C& c, Key key) {
         cmp_swap(c, key, 0, 11);
         cmp_swap(c, key, 1, 15);
         cmp_swap(c, key, 2, 10);
@@ -692,7 +700,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s18(C& c, Key&& key) {
+    void s18(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -773,7 +781,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s19(C& c, Key&& key) {
+    void s19(C& c, Key key) {
         cmp_swap(c, key, 0, 12);
         cmp_swap(c, key, 1, 4);
         cmp_swap(c, key, 2, 8);
@@ -862,7 +870,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s20(C& c, Key&& key) {
+    void s20(C& c, Key key) {
         cmp_swap(c, key, 0, 3);
         cmp_swap(c, key, 1, 7);
         cmp_swap(c, key, 2, 5);
@@ -957,7 +965,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s21(C& c, Key&& key) {
+    void s21(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -1060,7 +1068,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s22(C& c, Key&& key) {
+    void s22(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -1170,7 +1178,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s23(C& c, Key&& key) {
+    void s23(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -1288,7 +1296,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s24(C& c, Key&& key) {
+    void s24(C& c, Key key) {
         cmp_swap(c, key, 0, 20);
         cmp_swap(c, key, 1, 12);
         cmp_swap(c, key, 2, 16);
@@ -1412,7 +1420,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s25(C& c, Key&& key) {
+    void s25(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -1547,7 +1555,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s26(C& c, Key&& key) {
+    void s26(C& c, Key key) {
         cmp_swap(c, key, 0, 25);
         cmp_swap(c, key, 1, 3);
         cmp_swap(c, key, 2, 9);
@@ -1690,7 +1698,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s27(C& c, Key&& key) {
+    void s27(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -1842,7 +1850,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s28(C& c, Key&& key) {
+    void s28(C& c, Key key) {
         cmp_swap(c, key, 0, 9);
         cmp_swap(c, key, 1, 20);
         cmp_swap(c, key, 2, 21);
@@ -2001,7 +2009,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s29(C& c, Key&& key) {
+    void s29(C& c, Key key) {
         cmp_swap(c, key, 0, 12);
         cmp_swap(c, key, 1, 10);
         cmp_swap(c, key, 2, 9);
@@ -2170,7 +2178,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s30(C& c, Key&& key) {
+    void s30(C& c, Key key) {
         cmp_swap(c, key, 1, 2);
         cmp_swap(c, key, 3, 10);
         cmp_swap(c, key, 4, 14);
@@ -2346,7 +2354,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s31(C& c, Key&& key) {
+    void s31(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -2530,7 +2538,7 @@ namespace cft { namespace netsort {
     }
 
     template <typename C, typename Key>
-    void s32(C& c, Key&& key) {
+    void s32(C& c, Key key) {
         cmp_swap(c, key, 0, 1);
         cmp_swap(c, key, 2, 3);
         cmp_swap(c, key, 4, 5);
@@ -2719,6 +2727,140 @@ namespace cft { namespace netsort {
     }
 
 }  // namespace netsort
-}  // namespace cft
 
-#endif /* CFT_INCLUDE_UTILS_SORTING_NETWORKS_HPP */
+template <typename C, typename K = IdentityFtor>
+void net_dispatch(C& container, K key = {}) {
+    switch (size(container)) {
+    case 0:
+    case 1:
+        return;
+#if CAV_MAX_NET_SIZE > 1
+    case 2:
+        return netsort::s2(container, key);
+#if CAV_MAX_NET_SIZE > 2
+    case 3:
+        return netsort::s3(container, key);
+#if CAV_MAX_NET_SIZE > 3
+    case 4:
+        return netsort::s4(container, key);
+#if CAV_MAX_NET_SIZE > 4
+    case 5:
+        return netsort::s5(container, key);
+#if CAV_MAX_NET_SIZE > 5
+    case 6:
+        return netsort::s6(container, key);
+#if CAV_MAX_NET_SIZE > 6
+    case 7:
+        return netsort::s7(container, key);
+#if CAV_MAX_NET_SIZE > 7
+    case 8:
+        return netsort::s8(container, key);
+#if CAV_MAX_NET_SIZE > 8
+    case 9:
+        return netsort::s9(container, key);
+#if CAV_MAX_NET_SIZE > 9
+    case 10:
+        return netsort::s10(container, key);
+#if CAV_MAX_NET_SIZE > 10
+    case 11:
+        return netsort::s11(container, key);
+#if CAV_MAX_NET_SIZE > 11
+    case 12:
+        return netsort::s12(container, key);
+#if CAV_MAX_NET_SIZE > 12
+    case 13:
+        return netsort::s13(container, key);
+#if CAV_MAX_NET_SIZE > 13
+    case 14:
+        return netsort::s14(container, key);
+#if CAV_MAX_NET_SIZE > 14
+    case 15:
+        return netsort::s15(container, key);
+#if CAV_MAX_NET_SIZE > 15
+    case 16:
+        return netsort::s16(container, key);
+#if CAV_MAX_NET_SIZE > 16
+    case 17:
+        return netsort::s17(container, key);
+#if CAV_MAX_NET_SIZE > 17
+    case 18:
+        return netsort::s18(container, key);
+#if CAV_MAX_NET_SIZE > 18
+    case 19:
+        return netsort::s19(container, key);
+#if CAV_MAX_NET_SIZE > 19
+    case 20:
+        return netsort::s20(container, key);
+#if CAV_MAX_NET_SIZE > 20
+    case 21:
+        return netsort::s21(container, key);
+#if CAV_MAX_NET_SIZE > 21
+    case 22:
+        return netsort::s22(container, key);
+#if CAV_MAX_NET_SIZE > 22
+    case 23:
+        return netsort::s23(container, key);
+#if CAV_MAX_NET_SIZE > 23
+    case 24:
+        return netsort::s24(container, key);
+#if CAV_MAX_NET_SIZE > 24
+    case 25:
+        return netsort::s25(container, key);
+#if CAV_MAX_NET_SIZE > 25
+    case 26:
+        return netsort::s26(container, key);
+#if CAV_MAX_NET_SIZE > 26
+    case 27:
+        return netsort::s27(container, key);
+#if CAV_MAX_NET_SIZE > 27
+    case 28:
+        return netsort::s28(container, key);
+#if CAV_MAX_NET_SIZE > 28
+    case 29:
+        return netsort::s29(container, key);
+#if CAV_MAX_NET_SIZE > 29
+    case 30:
+        return netsort::s30(container, key);
+#if CAV_MAX_NET_SIZE > 30
+    case 31:
+        return netsort::s31(container, key);
+#if CAV_MAX_NET_SIZE > 31
+    default:
+        assert(size(container) == 32);
+        return netsort::s32(container, key);
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+    }
+}
+}  // namespace cav
+
+#endif /* CAV_INCLUDE_UTILS_SORTING_NETWORKS_HPP */
