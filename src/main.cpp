@@ -64,14 +64,14 @@ void run_test_loop(char const (&name)[N],
             offsets.push_back(seq.size());
 
         auto t0 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort(c, key); }, seq, offsets);
+        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort_lsd(c, key); }, seq, offsets);
         auto t1 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort2(c, key); }, seq0, offsets);
+        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort_msd(c, key); }, seq0, offsets);
         auto t2 = std::chrono::high_resolution_clock::now();
         sort_sequence([&](cav::Span<T*> c) { sorter.sort(c, key); }, seq1, offsets);
         auto t3 = std::chrono::high_resolution_clock::now();
         sort_sequence(
-            [&](cav::Span<T*> c) { std::sort(c.begin(), c.end(), cav::make_comp_wrap(key)); },
+            [&](cav::Span<T*> c) { std::sort(c.begin(), c.end(), cav::sort::make_comp_wrap(key)); },
             seq2,
             offsets);
         auto t4 = std::chrono::high_resolution_clock::now();

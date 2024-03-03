@@ -107,18 +107,12 @@
 #ifndef CAV_INCLUDE_UTILS_SORTING_NETWORKS_HPP
 #define CAV_INCLUDE_UTILS_SORTING_NETWORKS_HPP
 
+#include <cstdint>
 #include <cstring>
 #include <type_traits>
 #include <utility>
 
 #include "util_functions.hpp"
-
-
-#ifndef NDEBUG
-#define CAV_MAX_NET_SIZE 8U
-#else
-#define CAV_MAX_NET_SIZE 32U
-#endif
 
 namespace cav {
 namespace netsort {

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(yasa)
+project(yasl)
 include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -26,5 +26,5 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(SOURCE  src/main.cpp)
 include_directories(include)
-add_executable(yasa ${SOURCE})
-target_link_libraries(yasa PUBLIC ${LIBRARIES})
+add_executable(yasl ${SOURCE})
+target_link_libraries(yasl PUBLIC ${LIBRARIES})
