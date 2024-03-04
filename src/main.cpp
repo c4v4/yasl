@@ -48,38 +48,38 @@ void run_test_loop(char const (&name)[N],
     double duration3_sec = 0;
     double duration4_sec = 0;
     auto   out_buff      = std::vector<T>(origin.size());
-    for (int i = 0; i < 5; ++i) {
-        auto seq  = origin;
+    for (int i = 0; i < 1; ++i) {
         auto seq0 = origin;
         auto seq1 = origin;
         auto seq2 = origin;
         auto seq3 = origin;
         auto seq4 = origin;
+        auto seq5 = origin;
 
         auto idis    = [&] { return sub_size - sub_size / 8 + rand() % (sub_size / 4); };
         auto offsets = std::vector<int>();
-        for (size_t offset = 0; offset < seq.size(); offset += idis())
+        for (size_t offset = 0; offset < seq0.size(); offset += idis())
             offsets.push_back(offset);
-        if (offsets.back() != static_cast<int>(seq.size()))
-            offsets.push_back(seq.size());
+        if (offsets.back() != static_cast<int>(seq0.size()))
+            offsets.push_back(seq0.size());
 
         auto t0 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort_lsd(c, key); }, seq, offsets);
+        sort_sequence([&](cav::Span<T*> c) { sorter.net_sort(c, key); }, seq0, offsets);
         auto t1 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort_msd(c, key); }, seq0, offsets);
+        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort_lsd(c, key); }, seq1, offsets);
         auto t2 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { sorter.sort(c, key); }, seq1, offsets);
+        sort_sequence([&](cav::Span<T*> c) { sorter.radix_sort_msd(c, key); }, seq2, offsets);
         auto t3 = std::chrono::high_resolution_clock::now();
+        sort_sequence([&](cav::Span<T*> c) { sorter.sort(c, key); }, seq3, offsets);
+        auto t4 = std::chrono::high_resolution_clock::now();
         sort_sequence(
             [&](cav::Span<T*> c) { std::sort(c.begin(), c.end(), cav::sort::make_comp_wrap(key)); },
-            seq2,
+            seq4,
             offsets);
-        auto t4 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { ska_sort(c.begin(), c.end(), key); }, seq3, offsets);
         auto t5 = std::chrono::high_resolution_clock::now();
         sort_sequence(
             [&](cav::Span<T*> c) { ska_sort_copy(c.begin(), c.end(), out_buff.begin(), key); },
-            seq4,
+            seq5,
             offsets);
         auto t6 = std::chrono::high_resolution_clock::now();
 
@@ -90,24 +90,23 @@ void run_test_loop(char const (&name)[N],
         duration3_sec += std::chrono::duration<double>(t5 - t4).count();
         duration4_sec += std::chrono::duration<double>(t6 - t5).count();
 #ifndef NDEBUG
-        for (size_t i = 0; i < seq3.size(); ++i) {
-            assert(key(seq[i]) == key(seq3[i]));
-            assert(key(seq0[i]) == key(seq3[i]));
-            assert(key(seq1[i]) == key(seq3[i]));
-            assert(key(seq2[i]) == key(seq3[i]));
+        for (size_t i = 0; i < seq4.size(); ++i) {
+            assert(key(seq[i]) == key(seq4[i]));
+            assert(key(seq0[i]) == key(seq4[i]));
+            assert(key(seq1[i]) == key(seq4[i]));
+            assert(key(seq2[i]) == key(seq4[i]));
+            assert(key(seq4[i]) == key(seq4[i]));
         }
 #endif
     }
 
-    fmt::print(" {:8} rdx sort {:8.2}, rdx sort2 {:8.2}, my sort {:8.2}, std sort {:8.2}, ska "
-               "sort {:8.2}, ska copy {:8.2}\n",
-               name,
-               sub_size * duration_sec / tot_elems,
-               sub_size * duration0_sec / tot_elems,
-               sub_size * duration1_sec / tot_elems,
-               sub_size * duration2_sec / tot_elems,
-               sub_size * duration3_sec / tot_elems,
-               sub_size * duration4_sec / tot_elems);
+    fmt::print(" {:10.0f} {:10.0f} {:10.0f} {:10.0f} {:10.0f} {:10.0f}\n",
+               1e9 * duration_sec / size(origin),
+               1e9 * duration0_sec / size(origin),
+               1e9 * duration1_sec / size(origin),
+               1e9 * duration2_sec / size(origin),
+               1e9 * duration3_sec / size(origin),
+               1e9 * duration4_sec / size(origin));
 }
 
 template <typename T, size_t N>
@@ -123,7 +122,8 @@ void run_test(char const (&name)[N], cav::Sorter<>& sorter, int sub_size, int to
     for (int i = 0; i < tot_elems; ++i)
         origin[i] = static_cast<T>(dis());
 
-    fmt::print("Sorting ~{}x{} [{:7.1},{:6.1}]",
+    fmt::print("{:9} {:9} {:9} [{:7.1},{:6.1}]",
+               name,
                sub_size,
                tot_elems / sub_size,
                double(min),
@@ -144,7 +144,9 @@ void run_test_fat(char const (&name)[N], cav::Sorter<>& sorter, int sub_size, in
     for (int i = 0; i < tot_elems; ++i)
         origin[i] = Fat<T, P>{static_cast<T>(dis()), {}};
 
-    fmt::print("Sorting ~{}x{} [{:7.1},{:6.1}]",
+
+    fmt::print("{:9} {:9} {:9} [{:7.1},{:6.1}]",
+               name,
                sub_size,
                tot_elems / sub_size,
                double(min),
@@ -170,7 +172,8 @@ void run_test_indirect(char const (&name)[N], cav::Sorter<>& sorter, int sub_siz
         origin[i] = i;
     }
 
-    fmt::print("Sorting ~{}x{} [{:7.1},{:6.1}]",
+    fmt::print("{:9} {:9} {:9} [{:7.1},{:6.1}]",
+               name,
                sub_size,
                tot_elems / sub_size,
                double(min),
@@ -189,6 +192,8 @@ int main(int argc, char const** argv) {
     auto sorter   = cav::make_sorter();
     int  sub_size = std::stoi(args[1]);
 
+    fmt::print("type         length   samples            range   net-sort    lsd-rdx    msd-rdx   "
+               "cav-sort   std-sort   ska-sort\n");
     // natives
     run_test<int8_t>("int8_t", sorter, sub_size, TOT_ELEMS);
     run_test<int16_t>("int16_t", sorter, sub_size, TOT_ELEMS);

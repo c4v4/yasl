@@ -239,6 +239,11 @@ public:
     }
 
     template <typename C, typename K = IdentityFtor>
+    static void insertion_sort(C& container, K key = {}) {
+        cav::insertion_sort(container, key);
+    }
+
+    template <typename C, typename K = IdentityFtor>
     void sort(C& container, K key = {}) {
         assert(size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
 
