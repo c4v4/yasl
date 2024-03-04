@@ -5,12 +5,49 @@ I wanted to see if I could find an algorithm faster than `std::sort` when I can 
 Here are the assumptions:
 
 - I can use extra O(N) space if it helps make things faster.
-- The things I'm sorting can be represented by a key that is a simple numerical types (like integers or floating points)
-- Focus on struct-like and indirect sorting (more interesting to my needs than plain natives types).
+- The things I'm sorting can be represented by a key that is a simple numerical type (like integers or floating points)
+- Focus on struct-like and indirect sorting (more interesting to my needs than plain native types).
 - Values cover a fraction of the whole type range (since I never use the whole range).
 
+## Preliminary Results
+I tried to handpick good thresholds that select the best algorithm available for any scenario considered. This approach has two main downfalls:
+
+ 1. It *strongly* overfits my hardware (ThinkPad P16v, intel i7-13700H, 32Gb RAM)
+ 2. The "scenario detection" is far from optimal. Without C++ reflection, I have to guess "how" and "what" I'm sorting and try to strike a good balance with common scenarios.
+
+But I tried anyway because it was fun.
+
+### Plots
+Here are some plots I've selected, in general, I'm not far from Malte Skarupke's implementation. He switches to MSD radix sort for keys >= 64bit, I do not because in my hardware it pays more to use LSD instead.
+I also take advantage of the fact that I do not expect to use the whole range of values (which can help skip some bytes, especially with 64bit integers).
+
+Let's start with plain 32-bit integers. My LSD implementation gets optimize quite aggressively and reaches Malte Skarupke's one. Indeed they perform pretty much in the same way.
+For smaller sizes, sorting networks seems to be the best option.
+
+![32bit signed integer sorting](https://docs.google.com/spreadsheets/d/e/2PACX-1vRh2sS1riIJwOcgfrk2cquUx9g1TWi-zR6YUqTR__sn9OdForEh8gI7O_BzF5L3lJJuzWMtDjGsDW1A/pubchart?oid=1003531067&format=image)
+
+For 64bit integers there're some differences, here ska_sort fallbacks to the MSD version and (in my hardware) it loses some of its performance.
+
+![64bit signed integer sorting](https://docs.google.com/spreadsheets/d/e/2PACX-1vRh2sS1riIJwOcgfrk2cquUx9g1TWi-zR6YUqTR__sn9OdForEh8gI7O_BzF5L3lJJuzWMtDjGsDW1A/pubchart?oid=1825503312&format=image)
+
+Same thing for sorting doubles. Here however the LSD optimization that skips bytes if they are all equal should be less useful.
+
+![Double sorting](https://docs.google.com/spreadsheets/d/e/2PACX-1vRh2sS1riIJwOcgfrk2cquUx9g1TWi-zR6YUqTR__sn9OdForEh8gI7O_BzF5L3lJJuzWMtDjGsDW1A/pubchart?oid=905839582&format=image)
+
+Let's consider now a struct-like object (still trivially copyable) with a double field as a key and 56bytes of padding to reach a full cache line of size.
+In this case, the sorting network actually struggles, while the STL insertion sort (that std::sort fallbacks to) seems to be the best option for small sizes.
+Then, for larger sequences, MDS radix sort seems to beat LSD (at least in my implementation), so I selected that pretty early.
+
+![Sorting 64byte struct with double key field](https://docs.google.com/spreadsheets/d/e/2PACX-1vRh2sS1riIJwOcgfrk2cquUx9g1TWi-zR6YUqTR__sn9OdForEh8gI7O_BzF5L3lJJuzWMtDjGsDW1A/pubchart?oid=1546247968&format=image)
+
+Finally, I considered the case where I want to sort indexes based on keys that are stored outside (this scenario is detected by a non-empty key function object, so it's easily cheatable).
+Here again, MSD can perform better than LSD so it's chosen for long sequences.
+
+![Sorting indexes with 64bit signed integer key accessed indirectly](https://docs.google.com/spreadsheets/d/e/2PACX-1vRh2sS1riIJwOcgfrk2cquUx9g1TWi-zR6YUqTR__sn9OdForEh8gI7O_BzF5L3lJJuzWMtDjGsDW1A/pubchart?oid=1568622674&format=image)
+
+
 ## Raw preliminary results
-Here some preliminary comparisons. 
+Here are the complete results from which I extracted the plots.
 
  - `type`: the type sorted, 3 categories: natives, struct with native key + padding (`<key>_<size>B`), type sorted indirectly using external array for keys.
  - `length`: average length of the sequences sorted.
@@ -19,15 +56,14 @@ Here some preliminary comparisons.
  - `net-sort`: sort based on sorting networks and merging.
  - `lsd-rdx`: least significant digit radix sort.
  - `msd-rdx`: most stignificant digit radix sort.
- - `cav-sort`: mixup of the various algorithm I have implemented, with handpicked thresholds.
- - `std-sort`: C++ STL sorting algorithm (hybrid of insertion sort, heap sort and quick sort).
+ - `cav-sort`: mixup of the various algorithms I have implemented, with handpicked thresholds.
+ - `std-sort`: C++ STL sorting algorithm (a hybrid of insertion sort, heap sort, and quick sort).
  - `ska-sort`: Malte Skarupke sorting algorithm (`ska_sort_copy`, hybrid of lsd radix sort, msd radix for keys larger than 8 bytes, and std::sort for small sequences).
 
 Like in Malte Skarupke benchmarks, the numbers report the average nanoseconds spent for each element of the sequence (to better underline differences).
 
 ```
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-int8_t            4   2500000 [ -1e+01, 1e+01]          1         22          9          1          6          6
 int8_t            8   1250000 [ -1e+01, 1e+01]          2         13          9          2          8          7
 int8_t           16    625000 [ -1e+01, 1e+01]          7          7          9          7         11         11
 int8_t           32    312500 [ -1e+01, 1e+01]         22          4          5          4         16         16
@@ -51,7 +87,6 @@ int8_t      4194304         2 [ -1e+01, 1e+01]         31          1          2 
 int8_t      8388608         1 [ -1e+01, 1e+01]         29          1          2          1         21          1
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-int16_t           4   2500000 [ -2e+02, 2e+02]          1         40          9          1          5          6
 int16_t           8   1250000 [ -2e+02, 2e+02]          2         24          9          2          7          7
 int16_t          16    625000 [ -2e+02, 2e+02]          2         14         10          2         10         10
 int16_t          32    312500 [ -2e+02, 2e+02]          4          8         15          4         15         15
@@ -75,7 +110,6 @@ int16_t     4194304         2 [ -2e+02, 2e+02]         34          3          4 
 int16_t     8388608         1 [ -2e+02, 2e+02]         36          3          4          3         32          3
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-int32_t           4   2500000 [ -5e+04, 5e+04]          1         89          9          1          5          6
 int32_t           8   1250000 [ -5e+04, 5e+04]          1         57          9          1          7          8
 int32_t          16    625000 [ -5e+04, 5e+04]          1         35         10          1         10         10
 int32_t          32    312500 [ -5e+04, 5e+04]          3         20         11          3         15         15
@@ -99,7 +133,6 @@ int32_t     4194304         2 [ -5e+04, 5e+04]         59          6          8 
 int32_t     8388608         1 [ -5e+04, 5e+04]         61          6          9          6         56          7
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-int64_t           4   2500000 [ -3e+09, 3e+09]          1        214          9          1          5          6
 int64_t           8   1250000 [ -3e+09, 3e+09]          2        131          9          2          7          7
 int64_t          16    625000 [ -3e+09, 3e+09]          2         80         10          2         10         10
 int64_t          32    312500 [ -3e+09, 3e+09]          4         45         12          4         15         16
@@ -123,7 +156,6 @@ int64_t     4194304         2 [ -3e+09, 3e+09]         69         15         30 
 int64_t     8388608         1 [ -3e+09, 3e+09]         73         15         38         15         66         32
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-float             4   2500000 [ -2e+19, 2e+19]          1         91          9          1          6          6
 float             8   1250000 [ -2e+19, 2e+19]          2         58          9          2          8          8
 float            16    625000 [ -2e+19, 2e+19]          2         37         10          2         10         10
 float            32    312500 [ -2e+19, 2e+19]          4         23         12          4         16         16
@@ -147,7 +179,6 @@ float       4194304         2 [ -2e+19, 2e+19]         73          6         21 
 float       8388608         1 [ -2e+19, 2e+19]         76          6         19          6         71          6
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-double            4   2500000 [-1e+154,1e+154]          1        219          9          1          6          6
 double            8   1250000 [-1e+154,1e+154]          2        136          9          2          7          8
 double           16    625000 [-1e+154,1e+154]          2         83         10          2         10         11
 double           32    312500 [-1e+154,1e+154]          4         52         12          4         16         16
@@ -171,7 +202,6 @@ double      4194304         2 [-1e+154,1e+154]         76         14         18 
 double      8388608         1 [-1e+154,1e+154]         80         14         19         14         74         24
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-flt_8B            4   2500000 [ -2e+19, 2e+19]          6         91         10          6          6          6
 flt_8B            8   1250000 [ -2e+19, 2e+19]          9         58         10          8          8          8
 flt_8B           16    625000 [ -2e+19, 2e+19]         14         37         10          9         11         11
 flt_8B           32    312500 [ -2e+19, 2e+19]         23         24         12         11         17         17
@@ -195,7 +225,6 @@ flt_8B      4194304         2 [ -2e+19, 2e+19]         92          7         19 
 flt_8B      8388608         1 [ -2e+19, 2e+19]         96          7         17          7         77          7
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-flt_16B           4   2500000 [ -2e+19, 2e+19]          6         92         10          6          6          6
 flt_16B           8   1250000 [ -2e+19, 2e+19]          9         59         10          8          8          8
 flt_16B          16    625000 [ -2e+19, 2e+19]         15         38         10          9         11         11
 flt_16B          32    312500 [ -2e+19, 2e+19]         24         27         12         11         17         17
@@ -219,7 +248,6 @@ flt_16B     4194304         2 [ -2e+19, 2e+19]         99         10         24 
 flt_16B     8388608         1 [ -2e+19, 2e+19]        104          9         22          9         79         10
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-flt_32B           4   2500000 [ -2e+19, 2e+19]          8         93         10          6          6          6
 flt_32B           8   1250000 [ -2e+19, 2e+19]         13         61         10          8          8          8
 flt_32B          16    625000 [ -2e+19, 2e+19]         17         38         11         10         11         11
 flt_32B          32    312500 [ -2e+19, 2e+19]         32         25         13         12         18         18
@@ -243,7 +271,6 @@ flt_32B     4194304         2 [ -2e+19, 2e+19]        112         16         28 
 flt_32B     8388608         1 [ -2e+19, 2e+19]        118         16         26         16         81         16
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-flt_64B           4   2500000 [ -2e+19, 2e+19]         10         95         11          7          7          7
 flt_64B           8   1250000 [ -2e+19, 2e+19]         14         62         11          9          9          9
 flt_64B          16    625000 [ -2e+19, 2e+19]         21         39         12         11         13         12
 flt_64B          32    312500 [ -2e+19, 2e+19]         36         28         14         13         21         21
@@ -267,86 +294,82 @@ flt_64B     4194304         2 [ -2e+19, 2e+19]        134         26         39 
 flt_64B     8388608         1 [ -2e+19, 2e+19]        139         26         37         26         92         25
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-dbl_16B           4   2500000 [-1e+154,1e+154]          6        220         10          6          6          6
-dbl_16B           8   1250000 [-1e+154,1e+154]          9        135          9          8          8          8
+dbl_16B           8   1250000 [-1e+154,1e+154]         10        135         10          8          8          8
 dbl_16B          16    625000 [-1e+154,1e+154]         15         83         10          9         10         11
-dbl_16B          32    312500 [-1e+154,1e+154]         24         60         12         11         17         17
+dbl_16B          32    312500 [-1e+154,1e+154]         24         81         12         11         17         17
 dbl_16B          64    156250 [-1e+154,1e+154]         27         28         14         14         21         21
 dbl_16B         128     78125 [-1e+154,1e+154]         31         18         19         18         25         28
 dbl_16B         256     39062 [-1e+154,1e+154]         35         15         15         15         28         30
-dbl_16B         512     19531 [-1e+154,1e+154]         39         14         15         14         32         26
-dbl_16B        1024      9765 [-1e+154,1e+154]         43         13         15         13         35         24
-dbl_16B        2048      4882 [-1e+154,1e+154]         48         15         17         15         39         23
-dbl_16B        4096      2441 [-1e+154,1e+154]         53         15         18         15         42         24
-dbl_16B        8192      1220 [-1e+154,1e+154]         57         15         25         15         46         25
-dbl_16B       16384       610 [-1e+154,1e+154]         62         15         26         15         49         24
+dbl_16B         512     19531 [-1e+154,1e+154]         39         14         15         14         31         26
+dbl_16B        1024      9765 [-1e+154,1e+154]         44         13         15         13         35         24
+dbl_16B        2048      4882 [-1e+154,1e+154]         48         14         16         14         39         23
+dbl_16B        4096      2441 [-1e+154,1e+154]         54         15         18         15         42         24
+dbl_16B        8192      1220 [-1e+154,1e+154]         57         15         25         15         45         26
+dbl_16B       16384       610 [-1e+154,1e+154]         64         19         28         19         49         25
 dbl_16B       32768       305 [-1e+154,1e+154]         67         15         25         15         52         23
-dbl_16B       65536       152 [-1e+154,1e+154]         71         16         23         16         56         22
+dbl_16B       65536       152 [-1e+154,1e+154]         72         16         23         16         55         22
 dbl_16B      131072        76 [-1e+154,1e+154]         76         16         21         16         58         21
-dbl_16B      262144        38 [-1e+154,1e+154]         80         16         21         16         62         23
-dbl_16B      524288        19 [-1e+154,1e+154]         84         16         22         16         64         24
-dbl_16B     1048576         9 [-1e+154,1e+154]         89         18         24         20         68         27
-dbl_16B     2097152         4 [-1e+154,1e+154]         94         18         23         23         70         29
-dbl_16B     4194304         2 [-1e+154,1e+154]         98         18         23         22         73         28
-dbl_16B     8388608         1 [-1e+154,1e+154]        100         19         23         23         75         27
+dbl_16B      262144        38 [-1e+154,1e+154]         84         23         21         16         61         22
+dbl_16B      524288        19 [-1e+154,1e+154]         85         16         21         16         65         24
+dbl_16B     1048576         9 [-1e+154,1e+154]         90         18         23         18         68         27
+dbl_16B     2097152         4 [-1e+154,1e+154]         94         18         23         18         70         29
+dbl_16B     4194304         2 [-1e+154,1e+154]         99         19         23         19         73         27
+dbl_16B     8388608         1 [-1e+154,1e+154]        105         19         24         19         76         26
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-dbl_32B           4   2500000 [-1e+154,1e+154]          8        222         10          6          6          6
 dbl_32B           8   1250000 [-1e+154,1e+154]         13        140         10          8          8          8
-dbl_32B          16    625000 [-1e+154,1e+154]         17         85         11         10         11         11
-dbl_32B          32    312500 [-1e+154,1e+154]         32         56         13         12         18         18
-dbl_32B          64    156250 [-1e+154,1e+154]         36         32         16         16         23         23
-dbl_32B         128     78125 [-1e+154,1e+154]         39         21         21         21         27         29
-dbl_32B         256     39062 [-1e+154,1e+154]         43         18         17         18         30         31
-dbl_32B         512     19531 [-1e+154,1e+154]         48         17         17         17         33         26
-dbl_32B        1024      9765 [-1e+154,1e+154]         53         19         17         19         37         25
-dbl_32B        2048      4882 [-1e+154,1e+154]         57         22         19         22         40         25
-dbl_32B        4096      2441 [-1e+154,1e+154]         62         21         21         21         43         27
-dbl_32B        8192      1220 [-1e+154,1e+154]         67         21         27         21         47         28
-dbl_32B       16384       610 [-1e+154,1e+154]         72         21         29         21         51         26
-dbl_32B       32768       305 [-1e+154,1e+154]         77         23         28         23         54         25
-dbl_32B       65536       152 [-1e+154,1e+154]         81         24         26         24         58         24
-dbl_32B      131072        76 [-1e+154,1e+154]         86         24         25         24         61         24
-dbl_32B      262144        38 [-1e+154,1e+154]         91         24         24         24         64         25
-dbl_32B      524288        19 [-1e+154,1e+154]         97         28         27         28         67         28
-dbl_32B     1048576         9 [-1e+154,1e+154]        102         29         29         29         71         31
-dbl_32B     2097152         4 [-1e+154,1e+154]        107         30         29         28         74         33
-dbl_32B     4194304         2 [-1e+154,1e+154]        111         30         28         28         77         34
-dbl_32B     8388608         1 [-1e+154,1e+154]        117         30         29         29         81         32
+dbl_32B          16    625000 [-1e+154,1e+154]         21         85         11         10         11         11
+dbl_32B          32    312500 [-1e+154,1e+154]         33         79         13         12         18         18
+dbl_32B          64    156250 [-1e+154,1e+154]         37         29         17         16         23         23
+dbl_32B         128     78125 [-1e+154,1e+154]         42         20         22         25         26         29
+dbl_32B         256     39062 [-1e+154,1e+154]         45         17         17         17         29         30
+dbl_32B         512     19531 [-1e+154,1e+154]         49         16         17         16         33         26
+dbl_32B        1024      9765 [-1e+154,1e+154]         54         19         17         19         36         25
+dbl_32B        2048      4882 [-1e+154,1e+154]         58         22         19         22         40         25
+dbl_32B        4096      2441 [-1e+154,1e+154]         63         21         21         21         43         27
+dbl_32B        8192      1220 [-1e+154,1e+154]         68         22         28         22         47         28
+dbl_32B       16384       610 [-1e+154,1e+154]         73         22         29         21         50         26
+dbl_32B       32768       305 [-1e+154,1e+154]         79         24         27         24         54         25
+dbl_32B       65536       152 [-1e+154,1e+154]         83         24         26         24         57         24
+dbl_32B      131072        76 [-1e+154,1e+154]         87         24         25         24         60         24
+dbl_32B      262144        38 [-1e+154,1e+154]         92         24         24         24         63         25
+dbl_32B      524288        19 [-1e+154,1e+154]         99         28         28         27         67         28
+dbl_32B     1048576         9 [-1e+154,1e+154]        104         29         29         29         70         31
+dbl_32B     2097152         4 [-1e+154,1e+154]        108         30         28         28         73         34
+dbl_32B     4194304         2 [-1e+154,1e+154]        113         30         27         27         77         33
+dbl_32B     8388608         1 [-1e+154,1e+154]        120         30         29         29         80         31
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-dbl_64B           4   2500000 [-1e+154,1e+154]          9        225         11          7          7          7
 dbl_64B           8   1250000 [-1e+154,1e+154]         14        142         11          9          9          9
-dbl_64B          16    625000 [-1e+154,1e+154]         22         88         12         11         12         12
-dbl_64B          32    312500 [-1e+154,1e+154]         36         54         14         13         21         21
-dbl_64B          64    156250 [-1e+154,1e+154]         39         33         18         18         25         25
-dbl_64B         128     78125 [-1e+154,1e+154]         43         25         26         26         29         32
-dbl_64B         256     39062 [-1e+154,1e+154]         48         21         21         21         32         34
+dbl_64B          16    625000 [-1e+154,1e+154]         22         88         12         11         12         13
+dbl_64B          32    312500 [-1e+154,1e+154]         36         72         14         13         21         21
+dbl_64B          64    156250 [-1e+154,1e+154]         40         30         19         18         26         25
+dbl_64B         128     78125 [-1e+154,1e+154]         44         24         26         30         29         32
+dbl_64B         256     39062 [-1e+154,1e+154]         48         20         21         20         32         34
 dbl_64B         512     19531 [-1e+154,1e+154]         53         28         22         28         36         29
-dbl_64B        1024      9765 [-1e+154,1e+154]         57         31         23         31         39         28
-dbl_64B        2048      4882 [-1e+154,1e+154]         62         32         24         32         43         29
-dbl_64B        4096      2441 [-1e+154,1e+154]         67         31         27         31         48         31
-dbl_64B        8192      1220 [-1e+154,1e+154]         72         33         34         33         51         32
-dbl_64B       16384       610 [-1e+154,1e+154]         78         36         36         36         54         30
-dbl_64B       32768       305 [-1e+154,1e+154]         84         38         36         38         58         30
-dbl_64B       65536       152 [-1e+154,1e+154]         89         37         35         37         62         30
-dbl_64B      131072        76 [-1e+154,1e+154]         95         38         35         38         66         31
-dbl_64B      262144        38 [-1e+154,1e+154]        107         45         36         45         69         32
-dbl_64B      524288        19 [-1e+154,1e+154]        116         48         38         48         73         36
-dbl_64B     1048576         9 [-1e+154,1e+154]        123         49         41         46         78         42
-dbl_64B     2097152         4 [-1e+154,1e+154]        129         49         41         41         82         45
-dbl_64B     4194304         2 [-1e+154,1e+154]        135         49         40         40         88         44
-dbl_64B     8388608         1 [-1e+154,1e+154]        135         49         40         40         93         44
+dbl_64B        1024      9765 [-1e+154,1e+154]         57         31         22         31         39         28
+dbl_64B        2048      4882 [-1e+154,1e+154]         62         32         23         32         43         29
+dbl_64B        4096      2441 [-1e+154,1e+154]         67         31         26         31         47         31
+dbl_64B        8192      1220 [-1e+154,1e+154]         72         33         33         33         50         32
+dbl_64B       16384       610 [-1e+154,1e+154]         79         36         36         35         54         30
+dbl_64B       32768       305 [-1e+154,1e+154]         83         38         35         35         58         30
+dbl_64B       65536       152 [-1e+154,1e+154]         89         38         34         34         61         31
+dbl_64B      131072        76 [-1e+154,1e+154]         95         39         33         33         66         31
+dbl_64B      262144        38 [-1e+154,1e+154]        106         45         35         35         69         32
+dbl_64B      524288        19 [-1e+154,1e+154]        116         48         38         38         73         37
+dbl_64B     1048576         9 [-1e+154,1e+154]        124         49         41         41         78         42
+dbl_64B     2097152         4 [-1e+154,1e+154]        131         49         40         40         82         44
+dbl_64B     4194304         2 [-1e+154,1e+154]        135         49         39         39         86         45
+dbl_64B     8388608         1 [-1e+154,1e+154]        146         49         40         40         92         44
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-i32_ind           4   2500000 [ -5e+04, 5e+04]          8         95         11          7          8          8
 i32_ind           8   1250000 [ -5e+04, 5e+04]         12         63         12         10         12         12
 i32_ind          16    625000 [ -5e+04, 5e+04]         20         43         13         12         16         17
-i32_ind          32    312500 [ -5e+04, 5e+04]         30         31         15         15         21         21
-i32_ind          64    156250 [ -5e+04, 5e+04]         33         22         17         22         25         25
-i32_ind         128     78125 [ -5e+04, 5e+04]         37         17         38         17         28         21
-i32_ind         256     39062 [ -5e+04, 5e+04]         41         14         30         14         32         11
-i32_ind         512     19531 [ -5e+04, 5e+04]         45         11         24         11         36          9
+i32_ind          32    312500 [ -5e+04, 5e+04]         30         31         15         15         20         21
+i32_ind          64    156250 [ -5e+04, 5e+04]         35         22         17         17         23         24
+i32_ind         128     78125 [ -5e+04, 5e+04]         37         17         37         17         27         21
+i32_ind         256     39062 [ -5e+04, 5e+04]         42         14         32         14         31         11
+i32_ind         512     19531 [ -5e+04, 5e+04]         46         11         26         11         36         10
 i32_ind        1024      9765 [ -5e+04, 5e+04]         49          9         21          9         39          8
 i32_ind        2048      4882 [ -5e+04, 5e+04]         54          8         19          8         43          7
 i32_ind        4096      2441 [ -5e+04, 5e+04]         59          8         18          7         47          7
@@ -363,14 +386,13 @@ i32_ind     4194304         2 [ -5e+04, 5e+04]        106         10         11 
 i32_ind     8388608         1 [ -5e+04, 5e+04]        111         17         14         17         80         17
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-i64_ind           4   2500000 [ -3e+09, 3e+09]          8        226         11          7          8          8
 i64_ind           8   1250000 [ -3e+09, 3e+09]         12        144         12         10         12         12
 i64_ind          16    625000 [ -3e+09, 3e+09]         19         96         13         12         16         17
-i64_ind          32    312500 [ -3e+09, 3e+09]         30         66         15         15         20         20
-i64_ind          64    156250 [ -3e+09, 3e+09]         34         49         18         18         24         24
-i64_ind         128     78125 [ -3e+09, 3e+09]         37         36         18         37         27         31
-i64_ind         256     39062 [ -3e+09, 3e+09]         41         29         41         29         30         38
-i64_ind         512     19531 [ -3e+09, 3e+09]         45         23         33         23         34         35
+i64_ind          32    312500 [ -3e+09, 3e+09]         30         92         15         15         21         21
+i64_ind          64    156250 [ -3e+09, 3e+09]         34         51         18         18         23         23
+i64_ind         128     78125 [ -3e+09, 3e+09]         37         37         19         19         27         31
+i64_ind         256     39062 [ -3e+09, 3e+09]         41         29         39         29         30         38
+i64_ind         512     19531 [ -3e+09, 3e+09]         45         23         30         23         33         35
 i64_ind        1024      9765 [ -3e+09, 3e+09]         49         19         28         19         37         29
 i64_ind        2048      4882 [ -3e+09, 3e+09]         54         18         25         18         41         25
 i64_ind        4096      2441 [ -3e+09, 3e+09]         59         18         25         18         44         25
@@ -387,14 +409,13 @@ i64_ind     4194304         2 [ -3e+09, 3e+09]        123         53         39 
 i64_ind     8388608         1 [ -3e+09, 3e+09]        129         61         47         47        108         49
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-flt_ind           4   2500000 [ -2e+19, 2e+19]         10        106         13          8          9          9
 flt_ind           8   1250000 [ -2e+19, 2e+19]         16         73         13         12         14         14
 flt_ind          16    625000 [ -2e+19, 2e+19]         22         51         16         15         19         19
-flt_ind          32    312500 [ -2e+19, 2e+19]         38         38         20         19         25         26
-flt_ind          64    156250 [ -2e+19, 2e+19]         42         24         21         24         31         31
-flt_ind         128     78125 [ -2e+19, 2e+19]         47         18         22         18         36         26
+flt_ind          32    312500 [ -2e+19, 2e+19]         39         38         19         19         26         27
+flt_ind          64    156250 [ -2e+19, 2e+19]         43         24         21         21         31         31
+flt_ind         128     78125 [ -2e+19, 2e+19]         48         18         21         18         36         26
 flt_ind         256     39062 [ -2e+19, 2e+19]         53         14         19         14         41         15
-flt_ind         512     19531 [ -2e+19, 2e+19]         58         11         17         11         46         11
+flt_ind         512     19531 [ -2e+19, 2e+19]         59         11         16         11         46         12
 flt_ind        1024      9765 [ -2e+19, 2e+19]         64          9         16          9         51          9
 flt_ind        2048      4882 [ -2e+19, 2e+19]         70          8         18          8         56          8
 flt_ind        4096      2441 [ -2e+19, 2e+19]         76          8         19          8         61          7
@@ -411,14 +432,13 @@ flt_ind     4194304         2 [ -2e+19, 2e+19]        148         14         32 
 flt_ind     8388608         1 [ -2e+19, 2e+19]        154         23         31         23        133         20
 
 type         length   samples            range   net-sort    lsd-rdx    msd-rdx   cav-sort   std-sort   ska-sort
-dbl_ind           4   2500000 [-1e+154,1e+154]         10        247         13          8          9          9
 dbl_ind           8   1250000 [-1e+154,1e+154]         16        161         13         12         14         14
 dbl_ind          16    625000 [-1e+154,1e+154]         22        111         16         15         20         19
-dbl_ind          32    312500 [-1e+154,1e+154]         37         84         19         19         25         25
-dbl_ind          64    156250 [-1e+154,1e+154]         42         55         25         25         30         30
-dbl_ind         128     78125 [-1e+154,1e+154]         46         38         28         38         35         39
-dbl_ind         256     39062 [-1e+154,1e+154]         51         29         20         29         40         40
-dbl_ind         512     19531 [-1e+154,1e+154]         57         22         19         22         45         34
+dbl_ind          32    312500 [-1e+154,1e+154]         38        109         19         19         26         25
+dbl_ind          64    156250 [-1e+154,1e+154]         42         58         25         25         31         30
+dbl_ind         128     78125 [-1e+154,1e+154]         47         38         29         29         36         39
+dbl_ind         256     39062 [-1e+154,1e+154]         52         29         20         29         41         40
+dbl_ind         512     19531 [-1e+154,1e+154]         57         22         20         22         46         34
 dbl_ind        1024      9765 [-1e+154,1e+154]         62         19         20         19         49         33
 dbl_ind        2048      4882 [-1e+154,1e+154]         68         18         22         18         54         31
 dbl_ind        4096      2441 [-1e+154,1e+154]         75         18         26         18         59         32
