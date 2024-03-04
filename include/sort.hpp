@@ -24,6 +24,7 @@
 #include "net_sort.hpp"
 #include "radix_sort.hpp"
 #include "sort_utils.hpp"
+#include "util_functions.hpp"
 
 #ifndef NDEBUG
 #include <algorithm>
@@ -243,23 +244,63 @@ public:
         cav::insertion_sort(container, key);
     }
 
+    static constexpr size_t msd_rdx_val_size_thresh[] = {(1ULL << 63U),  // < 8byte
+                                                         (1ULL << 42U),  // 8 bytes
+                                                         (1ULL << 26U),  // 16 bytes
+                                                         (1ULL << 22U),
+                                                         (1ULL << 18U),  // 32 bytes
+                                                         (1ULL << 14U),
+                                                         (1ULL << 12U),
+                                                         (1ULL << 10U),
+                                                         (1ULL << 8U)};  // 64 bytes
+
     template <typename C, typename K = IdentityFtor>
-    void sort(C& container, K key = {}) {
+    auto sort(C& container, K key = {}) -> CAV_REQUIRES(
+        std::is_same<sort::value_t<C>, sort::key_t<C, K>>::value&& std::is_empty<K>::value) {
+        // Best effort to detect containers of native types using themselves as a key
+
         assert(size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
 
-        if (std::is_same<sort::value_t<C>, sort::key_t<C, K>>::value && std::is_empty<K>::value)
-            if (size(container) < sizeof(sort::key_t<C, K>) * 24)  // Native types
-                net_sort(container, key);
+        // Native types are usually better handled with sorting networks + lsd radix sort
+        if (size(container) < sizeof(sort::key_t<C, K>) * 24)
+            net_sort(container, key);
+        else
+            radix_sort_lsd(container, key);
+    }
+
+    template <typename C, typename K = IdentityFtor>
+    auto sort(C& container, K key = {})
+        -> CAV_REQUIRES(!(std::is_same<sort::value_t<C>, sort::key_t<C, K>>::value &&
+                          std::is_empty<K>::value)) {
+        assert(size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
+
+        static constexpr size_t val_size = sizeof(sort::value_t<C>);
+        // In other scenarios, insertion_sort does a better job for small containers
+        if (size(container) < sizeof(sort::key_t<C, K>) * 18)
+            if (std::is_empty<K>::value)
+                insertion_sort(container, key);
             else
+                radix_sort_msd(container, key);
+
+        // If the type is larger than a cache-line std::sort is still the best option
+        else if (val_size > 64U)
+            std::sort(std::begin(container), std::end(container), sort::make_comp_wrap(key));
+
+        else {
+            // Key does not have state -> probably a field of a struct
+            //                    else -> probably indirect key
+            size_t msd_rdx_thresh = std::is_empty<K>::value ? msd_rdx_val_size_thresh[val_size / 8U]
+                                                            : (1ULL << 22U);
+
+
+            // If the key is smaller than 8 bytes or the type is relatively small -> lsd radix sort
+            if (sizeof(sort::key_t<C, K>) <= 4U || size(container) < msd_rdx_thresh)
                 radix_sort_lsd(container, key);
 
-        else if (size(container) < sizeof(sort::key_t<C, K>) * 12)
-            insertion_sort(container, key);
-        else if (sizeof(sort::key_t<C, K>) < 8 || size(container) < (1ULL << 20U))
-            radix_sort_lsd(container, key);
-        else
-            radix_sort_msd(container, key);
-
+            // Otherwise, msd radix sort perform better with types under 64 bytes
+            else
+                radix_sort_msd(container, key);
+        }
         assert(
             std::is_sorted(std::begin(container), std::end(container), sort::make_comp_wrap(key)));
     }
