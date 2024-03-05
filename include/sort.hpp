@@ -17,6 +17,7 @@
 #define CAV_INCLUDE_RADIX_STUFF_HPP
 
 #include <cassert>
+#include <cstdint>
 #include <cstring>
 #include <memory>
 
@@ -95,7 +96,21 @@ private:
             move_uninit(buffer[idx], elem);
         }
         move_uninit_span(container, buffer);
+
+        // STL partiton
+        // while (true) {
+        //     while (comp(first, pivot))
+        //         ++first;
+        //     --last;
+        //     while (comp(pivot, last))
+        //         --last;
+        //     if (!(first < last))
+        //         return first;
+        //     std::iter_swap(first, last);
+        //     ++first;
+        // }
     }
+
 
 public:
     template <typename C, typename K = IdentityFtor>
@@ -142,18 +157,18 @@ public:
     ////////////////////////////// RADIX NTH ELEMENT /////////////////////////////////////
 private:
     template <typename C1, typename C2, size_type Nm>
-    static void _unwind_moves(C1&       cont1,
-                              C2&       cont2,
-                              size_type i,
+    static void _unwind_moves(C1&     cont1,
+                              C2&     cont2,
+                              uint8_t ibeg,
                               size_type (&begs)[Nm],
                               size_type (&ends)[Nm]) {
-        for (; i < Nm; ++i) {
-            for (size_type j = begs[i]; j < ends[i]; ++j)
-                move_uninit(cont1[j], cont2[j]);
+        for (uint8_t i = ibeg; i < Nm; ++i) {
+            move_uninit_span(make_span(cont1, begs[i], ends[i]),
+                             make_span(cont2, begs[i], ends[i]));
             if (++i >= Nm)
                 return;
-            for (size_type j = begs[i]; j < ends[i]; ++j)
-                move_uninit(cont2[j], cont1[j]);
+            move_uninit_span(make_span(cont2, begs[i], ends[i]),
+                             make_span(cont1, begs[i], ends[i]));
         }
     }
 
@@ -311,7 +326,7 @@ public:
         if (size(container) < 48U)
             sort(container, key);
         else
-            radix_nth_elem(container, nth, key);  // Faster for smaller types
+            radix_nth_elem(container, nth, key);
 
 #ifndef NDEBUG
         for (size_type i = 0; i < nth; ++i)

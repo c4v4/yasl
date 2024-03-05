@@ -22,35 +22,6 @@
 #include "util_functions.hpp"
 
 namespace cav {
-
-namespace sort {
-    ///////// SHORTHAND TEMPLATE ALIASES FOR SORTED TYPES METADATA //////////
-    template <typename C>
-    using value_t = container_value_type_t<C>;
-
-    template <typename C, typename K>
-    using key_t = no_cvr<decltype(std::declval<K>()(std::declval<value_t<C>>()))>;
-
-    template <typename C, typename K>
-    using ukey_t = no_cvr<decltype(to_uint(std::declval<key_t<C, K>>()))>;
-
-    template <typename K>
-    struct CompWrap {
-        K key;
-
-        template <typename T>
-        bool operator()(T const& v1, T const& v2) {
-            return key(v1) < key(v2);
-        }
-    };
-
-    template <typename K>
-    CompWrap<K> make_comp_wrap(K key) noexcept {
-        return CompWrap<K>{key};
-    }
-
-}  // namespace sort
-
 /////////////////////////// KEYS CONVERSION ///////////////////////////
 
 static uint8_t to_uint(uint8_t k) noexcept {
@@ -97,6 +68,34 @@ static uint64_t to_uint(double d) noexcept {
     return unsgn ^ (sign_mask | (1ULL << 63U));
 }
 
+namespace sort {
+    ///////// SHORTHAND TEMPLATE ALIASES FOR SORTED TYPES METADATA //////////
+    template <typename C>
+    using value_t = container_value_type_t<C>;
+
+    template <typename C, typename K>
+    using key_t = no_cvr<decltype(std::declval<K>()(std::declval<value_t<C>>()))>;
+
+    template <typename C, typename K>
+    using ukey_t = no_cvr<decltype(to_uint(std::declval<key_t<C, K>>()))>;
+
+    template <typename K>
+    struct CompWrap {
+        K key;
+
+        template <typename T>
+        bool operator()(T const& v1, T const& v2) {
+            return key(v1) < key(v2);
+        }
+    };
+
+    template <typename K>
+    CompWrap<K> make_comp_wrap(K key) noexcept {
+        return CompWrap<K>{key};
+    }
+
+}  // namespace sort
+
 template <size_t N, typename T>
 static uint8_t nth_byte(T k) noexcept {
     return static_cast<uint8_t>(k >> 8U * N);
@@ -123,7 +122,7 @@ static auto move_uninit(D& dest, S& src) -> CAV_REQUIRES(std::is_trivially_copya
 
 /// @brief Moves src span to dest span. Assumes that dest refers to uninitialized memory.
 template <typename D, typename S>
-static auto move_uninit_span(D& dest, S& src)
+static auto move_uninit_span(D&& dest, S&& src)
     -> CAV_REQUIRES(!std::is_trivially_copyable<sort::value_t<S>>::value) {
     for (size_t i = 0; i < size(src); ++i)
         move_uninit(dest[i], src[i]);
@@ -131,7 +130,7 @@ static auto move_uninit_span(D& dest, S& src)
 
 /// @brief Moves src span to dest span, optimized for trivially copiable types.
 template <typename D, typename S>
-static auto move_uninit_span(D& dest, S& src)
+static auto move_uninit_span(D&& dest, S&& src)
     -> CAV_REQUIRES(std::is_trivially_copyable<sort::value_t<S>>::value) {
     static_assert(std::is_same<sort::value_t<D>, sort::value_t<S>>::value, "Values mismatch");
     std::memcpy(std::addressof(dest[0]),

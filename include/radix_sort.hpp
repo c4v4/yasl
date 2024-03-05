@@ -96,7 +96,7 @@ static void radix_sort_lsd(C1& container, C2& buff, K key = {}) {
             ++counters[b][nth_byte(to_uint(key(elem)), b)];
 
     SzT accum[n_bytes] = {};
-    SzT nnz[n_bytes]   = {};
+    SzT nnz[n_bytes]   = {};  // to skip bytes
     for (SzT i = 0; i < 256; ++i)
         for (uint8_t b = 0; b < n_bytes; ++b) {
             SzT old_count  = counters[b][i];
@@ -137,12 +137,11 @@ static void radix_sort_msd(C1&     cont,
 
     SzT sub_beg = 0;
     for (SzT s = srng.beg; s < srng.end; sub_beg = counts[s++]) {
-        SzT sub_size = counts[s] - sub_beg;
-        if (sub_size == 0)
+        if (sub_beg == counts[s])
             continue;
         SzT  sub_counts[256] = {};
-        auto sub_buff        = make_span(std::begin(buff) + sub_beg, sub_size);
-        auto sub_cont        = make_span(std::begin(cont) + sub_beg, sub_size);
+        auto sub_buff        = make_span(buff, sub_beg, counts[s]);
+        auto sub_cont        = make_span(cont, sub_beg, counts[s]);
         auto ssrng           = byte_sort_msd(sub_buff, sub_cont, key, b - 1, sub_counts);
         if (ssrng.end == 0) {
             move_uninit_span(sub_cont, sub_buff);
@@ -155,13 +154,12 @@ static void radix_sort_msd(C1&     cont,
 
         SzT sub_sub_beg = 0;
         for (SzT ss = ssrng.beg; ss < ssrng.end; sub_sub_beg = sub_counts[ss++]) {
-            SzT  sub_sub_size = sub_counts[ss] - sub_sub_beg;
-            auto sub_sub_cont = make_span(std::begin(sub_cont) + sub_sub_beg, sub_sub_size);
-            if (sub_sub_size <= 4) {
+            auto sub_sub_cont = make_span(sub_cont, sub_sub_beg, sub_counts[ss]);
+            if (size(sub_sub_cont) <= 4) {
                 net_dispatch(sub_sub_cont, key);
                 continue;
             }
-            auto sub_sub_buff = make_span(std::begin(sub_buff) + sub_sub_beg, sub_sub_size);
+            auto sub_sub_buff = make_span(sub_buff, sub_sub_beg, sub_counts[ss]);
             radix_sort_msd<SzT>(sub_sub_cont, sub_sub_buff, key, b - 2);
             assert(std::is_sorted(std::begin(sub_sub_cont),
                                   std::end(sub_sub_cont),

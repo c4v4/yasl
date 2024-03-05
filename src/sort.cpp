@@ -91,11 +91,10 @@ void run_test_loop(char const (&name)[N],
         duration4_sec += std::chrono::duration<double>(t6 - t5).count();
 #ifndef NDEBUG
         for (size_t i = 0; i < seq4.size(); ++i) {
-            assert(key(seq[i]) == key(seq4[i]));
             assert(key(seq0[i]) == key(seq4[i]));
             assert(key(seq1[i]) == key(seq4[i]));
             assert(key(seq2[i]) == key(seq4[i]));
-            assert(key(seq4[i]) == key(seq4[i]));
+            assert(key(seq3[i]) == key(seq4[i]));
         }
 #endif
     }

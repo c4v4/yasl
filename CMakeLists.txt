@@ -24,7 +24,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OPT_FLAGS}")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(SOURCE  src/main.cpp)
 include_directories(include)
-add_executable(yasl ${SOURCE})
-target_link_libraries(yasl PUBLIC ${LIBRARIES})
+add_executable(sort src/sort.cpp)
+target_link_libraries(sort PUBLIC ${LIBRARIES})
+
+add_executable(nth_elem src/nth_elem.cpp)
+target_link_libraries(nth_elem PUBLIC ${LIBRARIES})

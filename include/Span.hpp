@@ -19,6 +19,8 @@
 #include <cassert>
 #include <iterator>
 
+#include "util_functions.hpp"
+
 namespace cav {
 
 /// @brief A simple non-owning span
@@ -70,6 +72,12 @@ template <typename ItT>
 template <typename ItT>
 [[nodiscard]] inline Span<ItT> make_span(ItT beg, size_t sz) {
     return {beg, beg + sz};
+}
+
+template <typename ConT>
+[[nodiscard]] inline auto make_span(ConT&& cont, size_t beg, size_t end)
+    -> Span<container_iterator_t<ConT>> {
+    return {std::begin(cont) + beg, std::begin(cont) + end};
 }
 
 }  // namespace cav
