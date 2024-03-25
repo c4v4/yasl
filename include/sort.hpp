@@ -87,28 +87,27 @@ private:
     /////////////////////////// DUTCH FLAG NTH ELEMENT ///////////////////////////////////
 private:
     template <typename C, typename V, typename K>
-    void _three_partition(C& container, V mid, size_type mid_start, K key) {
+    void _three_partition(C& container, V mid_k, size_type mid_start, K key) {
         auto      buffer = _get_span<sort::value_t<C>>(size(container));
         size_type front = 0, back = size(container) - 1;
         for (auto& elem : container) {
             auto      k   = to_uint(key(elem));
-            size_type idx = k < mid ? front++ : k > mid ? back-- : mid_start++;
+            size_type idx = k < mid_k ? front++ : k > mid_k ? back-- : mid_start++;
             move_uninit(buffer[idx], elem);
         }
         move_uninit_span(container, buffer);
 
-        // STL partiton
-        // while (true) {
-        //     while (comp(first, pivot))
-        //         ++first;
-        //     --last;
-        //     while (comp(pivot, last))
-        //         --last;
-        //     if (!(first < last))
-        //         return first;
-        //     std::iter_swap(first, last);
-        //     ++first;
-        // }
+#ifndef NDEBUG
+        auto it = std::begin(container);
+        while (it != std::end(container) && to_uint(key(*it)) < mid_k)
+            ++it;
+        while (it != std::end(container) && to_uint(key(*it)) == mid_k)
+            ++it;
+        assert(it == std::begin(container)) + mid_start;
+        while (it != std::end(container) && to_uint(key(*it)) > mid_k)
+            ++it;
+        assert(it == std::end(container));
+#endif
     }
 
 
@@ -136,8 +135,7 @@ public:
                 }
                 nth_copy -= counters[i];
             }
-            for (auto& c : counters)
-                c = 0;
+            std::memset(counters, 0, sizeof(counters));
 
             size_type count = 0;
             for (size_type j = 0; count < bucket_size; ++j) {
@@ -152,6 +150,13 @@ public:
         }
 
         _three_partition(container, key_buff[0], nth - nth_copy, key);
+
+#ifndef NDEBUG
+        for (size_type i = 0; i < nth; ++i)
+            assert(to_uint(key(container[i])) <= to_uint(key(container[nth])));
+        for (size_type i = nth; i < size(container); ++i)
+            assert(to_uint(key(container[i])) >= to_uint(key(container[nth])));
+#endif
     }
 
     ////////////////////////////// RADIX NTH ELEMENT /////////////////////////////////////
