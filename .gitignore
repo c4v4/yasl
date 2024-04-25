@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 Francesco Cavaliere
+# SPDX-License-Identifier: MIT
+
 build
 .cache
 .vscode

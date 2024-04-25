@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2024 Francesco Cavaliere
+SPDX-License-Identifier: MIT
+-->
+
 # Yet Another Sorting Library
 
 A repo where I fool around with different sorting algorithms. 

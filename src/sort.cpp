@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2024 Francesco Cavaliere <francescocava95@gmail.com>
+// SPDX-License-Identifier: MIT
+
+#include "sort.hpp"
+
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
@@ -10,7 +15,6 @@
 #include "Span.hpp"
 #include "limits.hpp"
 #include "ska_sort.hpp"
-#include "sort.hpp"
 
 template <typename T, size_t K>
 struct Fat {
