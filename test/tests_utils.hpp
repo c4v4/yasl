@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Francesco Cavaliere <francescocava95@gmail.com>
+// SPDX-License-Identifier: MIT
+
 #ifndef CAV_TEST_TESTS_UTILS_HPP
 #define CAV_TEST_TESTS_UTILS_HPP
 
