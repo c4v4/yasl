@@ -76,14 +76,14 @@ private:
 private:
     template <typename C, typename V, typename K>
     void _three_partition(C& container, V mid_k, size_type mid_start, K key) {
-        auto      buffer = _get_span<sort::value_t<C>>(cav::size(container));
+        auto      buff  = _get_span<sort::value_t<C>>(cav::size(container));
         size_type front = 0, back = cav::size(container) - 1;
         for (auto& elem : container) {
             auto      k   = to_uint(key(elem));
             size_type idx = k < mid_k ? front++ : k > mid_k ? back-- : mid_start++;
-            move_uninit(buffer[idx], elem);
+            move_uninit(buff[idx], elem);
         }
-        move_uninit_span(container, buffer);
+        move_uninit_span(container, buff);
 
 #ifndef NDEBUG
         auto it = std::begin(container);
@@ -223,6 +223,7 @@ public:
                 return _unwind_moves(val_buff, container, b + 1, begs, ends);
             --b;
         }
+        assert_nth_elem(container, nth, key);
     }
 
 public:
@@ -243,8 +244,8 @@ public:
         if (cav::size(container) <= CAV_MAX_NET_SIZE)
             return net_dispatch(container, key);
 
-        auto buffer = _get_span<sort::value_t<C>>(cav::size(container));
-        cav::net_sort<size_type>(container, buffer, key);
+        auto buff = _get_span<sort::value_t<C>>(cav::size(container));
+        cav::net_sort<size_type>(container, buff, key);
     }
 
     template <typename C, typename K = IdentityFtor>
@@ -311,7 +312,7 @@ public:
             else
                 radix_sort_msd(container, key);
         }
-        assert(is_sorted(container, key));
+        assert_sorted(container, key);
     }
 
     template <typename C, typename K = IdentityFtor>
@@ -323,12 +324,7 @@ public:
         else
             radix_nth_elem(container, nth, key);
 
-#ifndef NDEBUG
-        for (size_type i = 0; i < nth; ++i)
-            assert(to_uint(key(container[i])) <= to_uint(key(container[nth])));
-        for (size_type i = nth; i < cav::size(container); ++i)
-            assert(to_uint(key(container[i])) >= to_uint(key(container[nth])));
-#endif
+        assert_nth_elem(container, nth, key);
     }
 };
 

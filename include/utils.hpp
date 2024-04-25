@@ -5,6 +5,7 @@
 #define CAV_INCLUDE_UTIL_FUNCTIONS_HPP
 
 #include <cstring>
+#include <iterator>
 #include <utility>
 
 namespace cav {
@@ -48,45 +49,37 @@ static T2 bit_cast(T1 t1) {
 }
 
 template <typename T, typename LT, typename UT>
- constexpr T clamp(T const& v, LT const& lb, UT const& ub) noexcept {
-    return (lb <= v) ? static_cast<T>(lb) : (v >= ub) ? static_cast<T>(ub) : v;
+T clamp(T const& v, LT const& lb, UT const& ub) {
+    return (v < lb) ? static_cast<T>(lb) : (v > ub) ? static_cast<T>(ub) : v;
 }
 
 template <typename T>
- constexpr T abs(T val) noexcept {
+T abs(T val) {
     return val < T{} ? -val : val;
 }
 
-//// Multi-arg max
-template <typename T>
- constexpr T&& max(T&& v) noexcept {
-    return static_cast<T&&>(v);
+/// Multi-arg max. NOTE: to avoid ambiguity, return type is always the first argument type
+template <typename T1, typename T2>
+constexpr T1 max(T1 v1, T2 v2) {
+    return v1 > static_cast<T1>(v2) ? v1 : static_cast<T1>(v2);
 }
 
 template <typename T1, typename T2, typename... Ts>
- constexpr T1 max(T1 const& v1, T2 const& v2, Ts const&... tail) noexcept {
-    return (v1 >= max(v2, tail...) ? v1 : static_cast<T1>(max(v2, tail...)));
+T1 max(T1 v1, T2 v2, Ts... tail) {
+    T1 mtail = max<T1>(v2, tail...);
+    return (v1 >= mtail ? v1 : mtail);
 }
 
-template <typename... Ts>
- constexpr bool max(bool b1, bool b2, Ts... tail) noexcept {
-    return b1 || max(b2, tail...);
-}
-
-//// Multi-arg min
-template <typename T>
- constexpr T&& min(T&& v) noexcept {
-    return static_cast<T&&>(v);
+/// Multi-arg min. NOTE: to avoid ambiguity, return type is always the first argument type
+template <typename T1, typename T2>
+constexpr T1 min(T1 v1, T2 v2) {
+    return v1 < static_cast<T1>(v2) ? v1 : static_cast<T1>(v2);
 }
 
 template <typename T1, typename T2, typename... Ts>
- constexpr T1 min(T1 const& v1, T2 const& v2, Ts const&... tail) noexcept {
-    return v1 <= min(v2, tail...) ? v1 : static_cast<T1>(min(v2, tail...));
-}
-
-template <typename... Ts>
- constexpr bool min(bool b1, bool b2, Ts... tail) noexcept {
-    return b1 && min(b2, tail...);
+T1 min(T1 v1, T2 v2, Ts... tail) {
+    T1 mtail = min<T1>(v2, tail...);
+    return v1 <= mtail ? v1 : mtail;
 }
 
 // Condition test operations
@@ -114,7 +107,7 @@ struct IdentityFtor {
 };
 
 template <typename C, typename K = IdentityFtor>
-bool is_sorted(C const& container, K&& key = IdentityFtor{}) {
+bool is_sorted(C const& container, K key = IdentityFtor{}) {
     if (cav::size(container) <= 1)
         return true;
     auto prev_key = key(*std::begin(container));
@@ -126,6 +119,44 @@ bool is_sorted(C const& container, K&& key = IdentityFtor{}) {
     }
     return true;
 }
+
+template <typename C, typename K = IdentityFtor>
+bool is_nth_elem(C const& container, size_t nth, K key = IdentityFtor{}) {
+    if (cav::size(container) <= 1)
+        return true;
+    for (size_t i = 0; i < nth; ++i)
+        if (key(container[i]) > key(container[nth]))
+            return false;
+    for (size_t i = nth; i < cav::size(container); ++i)
+        if (key(container[i]) < key(container[nth]))
+            return false;
+    return true;
+}
+
+#ifndef NDEBUG
+template <typename C, typename K = IdentityFtor>
+void assert_sorted(C const& container, K key = IdentityFtor{}) {
+    if (cav::size(container) <= 1)
+        return;
+    auto prev_key = key(*std::begin(container));
+    for (auto const& elem : container) {
+        auto elem_key = key(elem);
+        assert(elem_key >= prev_key);
+        prev_key = elem_key;
+    }
+}
+
+template <typename C, typename K = IdentityFtor>
+void assert_nth_elem(C const& container, size_t nth, K key = IdentityFtor{}) {
+    if (cav::size(container) <= 1)
+        return;
+    for (size_t i = 0; i < nth; ++i)
+        assert(key(container[i]) <= key(container[nth]));
+    for (size_t i = nth; i < cav::size(container); ++i)
+        assert(key(container[i]) >= key(container[nth]));
+}
+#endif
+
 
 }  // namespace cav
 

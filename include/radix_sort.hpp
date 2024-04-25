@@ -4,13 +4,13 @@
 #ifndef CAV_INCLUDE_RADIX_SORT_HPP
 #define CAV_INCLUDE_RADIX_SORT_HPP
 
-#ifndef NDEBUG
-#include <algorithm>
-#endif
 #include <cassert>
 #include <cstdint>
+#include <type_traits>
 
+#include "Span.hpp"
 #include "sort_utils.hpp"
+#include "sorting_networks.hpp"
 #include "utils.hpp"
 
 namespace cav {
@@ -65,18 +65,21 @@ namespace {
             ++counters[k];
         }
         assert(counters[beg] > 0 && counters[end - 1] == cav::size(cont));
-        assert(is_sorted(buff,
-                         [&](sort::value_t<C1> const& c) { return nth_byte(to_uint(key(c)), b); }));
+        assert_sorted(buff,
+                      [&](sort::value_t<C1> const& c) { return nth_byte(to_uint(key(c)), b); });
         return {beg, end};
     }
 }  // namespace
 
 template <typename SzT, typename C1, typename C2, typename K = IdentityFtor>
-static void radix_sort_lsd(C1& container, C2& buff, K key = {}) {
+static void radix_sort_lsd(C1& cont, C2& buff, K key = {}) {
+    static_assert(std::is_unsigned<sort::ukey_t<C1, K>>::value, "Key type must be unsigned");
     constexpr uint8_t n_bytes = sizeof(sort::key_t<C1, K>);
+    assert(cav::size(cont) <= cav::size(buff));
+    auto buff_span = make_span(std::begin(buff), cav::size(cont));
 
     SzT counters[n_bytes][256] = {};
-    for (auto const& elem : container)
+    for (auto const& elem : cont)
         for (uint8_t b = 0; b < n_bytes; ++b)
             ++counters[b][nth_byte(to_uint(key(elem)), b)];
 
@@ -92,14 +95,12 @@ static void radix_sort_lsd(C1& container, C2& buff, K key = {}) {
 
     SzT b = 0;
     for (; b < n_bytes;) {
-        b = byte_sort_lsd(container, buff, key, b, counters[b], nnz);
+        b = byte_sort_lsd(cont, buff_span, key, b, counters[b], nnz);
         if (b == n_bytes)
-            return move_uninit_span(container, buff);
-        b = byte_sort_lsd(buff, container, key, b, counters[b], nnz);
+            return move_uninit_span(cont, buff_span);
+        b = byte_sort_lsd(buff_span, cont, key, b, counters[b], nnz);
     }
 }
-
-#define CHECK_CONT(cont, key) assert(is_sorted(cont, key))
 
 template <typename SzT, typename C1, typename C2, typename K = IdentityFtor>
 static void radix_sort_msd(C1&     cont,
@@ -107,16 +108,22 @@ static void radix_sort_msd(C1&     cont,
                            K       key = {},
                            uint8_t b   = sizeof(sort::key_t<C1, K>) - 1) {
     constexpr uint8_t n_bytes = sizeof(sort::key_t<C1, K>);
+    assert(cav::size(cont) <= cav::size(buff));
+    auto buff_span = make_span(std::begin(buff), cav::size(cont));
 
     SzT  counts[256] = {};
-    auto srng        = byte_sort_msd(cont, buff, key, b, counts);
-    if (srng.end == 0)
-        return CHECK_CONT(cont, key);
+    auto srng        = byte_sort_msd(cont, buff_span, key, b, counts);
+    if (srng.end == 0) {
+        assert_sorted(cont, key);
+        return;
+    }
+
     assert(srng.beg < srng.end);
 
     if (b == 0) {
-        move_uninit_span(cont, buff);
-        return CHECK_CONT(cont, key);
+        move_uninit_span(cont, buff_span);
+        assert_sorted(cont, key);
+        return;
     }
 
     SzT sub_beg = 0;
@@ -124,32 +131,36 @@ static void radix_sort_msd(C1&     cont,
         if (sub_beg == counts[s])
             continue;
         SzT  sub_counts[256] = {};
-        auto sub_buff        = make_span(buff, sub_beg, counts[s]);
+        auto sub_buff        = make_span(buff_span, sub_beg, counts[s]);
         auto sub_cont        = make_span(cont, sub_beg, counts[s]);
         auto ssrng           = byte_sort_msd(sub_buff, sub_cont, key, b - 1, sub_counts);
         if (ssrng.end == 0) {
             move_uninit_span(sub_cont, sub_buff);
+            assert_sorted(sub_cont, key);
             continue;
         }
         assert(ssrng.beg < ssrng.end);
 
-        if (b - 1 == 0)
+        if (b - 1 == 0){
+            assert_sorted(sub_cont, key);
             continue;
+        }
 
         SzT sub_sub_beg = 0;
         for (SzT ss = ssrng.beg; ss < ssrng.end; sub_sub_beg = sub_counts[ss++]) {
             auto sub_sub_cont = make_span(sub_cont, sub_sub_beg, sub_counts[ss]);
             if (cav::size(sub_sub_cont) <= 4) {
                 net_dispatch(sub_sub_cont, key);
+                assert_sorted(sub_sub_cont, key);
                 continue;
             }
             auto sub_sub_buff = make_span(sub_buff, sub_sub_beg, sub_counts[ss]);
             radix_sort_msd<SzT>(sub_sub_cont, sub_sub_buff, key, b - 2);
-            assert(is_sorted(sub_sub_cont, key));
+            assert_sorted(sub_sub_cont, key);
         }
     }
 
-    CHECK_CONT(cont, key);
+    assert_sorted(cont, key);
 }
 }  // namespace cav
 

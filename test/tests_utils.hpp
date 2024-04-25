@@ -58,6 +58,10 @@ public:
     ClassType operator-() {
         return ClassType{-elem};
     }
+
+    operator T() const noexcept {
+        return elem;
+    }
 };
 }  // namespace cav
 

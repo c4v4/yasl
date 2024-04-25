@@ -94,6 +94,10 @@
 #ifndef CAV_INCLUDE_UTILS_SORTING_NETWORKS_HPP
 #define CAV_INCLUDE_UTILS_SORTING_NETWORKS_HPP
 
+#ifndef CAV_MAX_NET_SIZE
+#define CAV_MAX_NET_SIZE 32
+#endif
+
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -2711,20 +2715,17 @@ namespace netsort {
 
 template <typename C, typename K = IdentityFtor>
 void net_dispatch(C& container, K key = {}) {
+    assert(cav::size(container) <= CAV_MAX_NET_SIZE);
     switch (cav::size(container)) {
     case 0:
     case 1:
         return;
-#if CAV_MAX_NET_SIZE > 1
     case 2:
         return netsort::s2(container, key);
-#if CAV_MAX_NET_SIZE > 2
     case 3:
         return netsort::s3(container, key);
-#if CAV_MAX_NET_SIZE > 3
     case 4:
         return netsort::s4(container, key);
-#if CAV_MAX_NET_SIZE > 4
     case 5:
         return netsort::s5(container, key);
 #if CAV_MAX_NET_SIZE > 5
@@ -2809,10 +2810,6 @@ void net_dispatch(C& container, K key = {}) {
     default:
         assert(cav::size(container) == 32);
         return netsort::s32(container, key);
-#endif
-#endif
-#endif
-#endif
 #endif
 #endif
 #endif
