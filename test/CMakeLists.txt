@@ -20,3 +20,4 @@ function(add_cft_test name)
 endfunction()
 
 add_cft_test(sorting_networks_test)
+add_cft_test(net_sort_test)

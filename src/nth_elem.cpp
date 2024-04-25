@@ -32,7 +32,6 @@ __attribute__((noinline)) void sort_sequence(T&&                        sorter,
     for (size_t o = 0; o < offsets.size() - 1; ++o) {
         auto span = cav::make_span(seq.data() + offsets[o], seq.data() + offsets[o + 1]);
         sorter(span);
-        // assert(std::is_sorted(span.begin(), span.end()));
     }
 }
 

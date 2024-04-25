@@ -2,89 +2,92 @@
 // SPDX-License-Identifier: MIT
 
 
-#include "tests_utils.hpp"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
+#include "net_sort.hpp"
 
 #include <doctest/doctest.h>
 
-#define CAV_MAX_NET_SIZE 32U
 #include "Span.hpp"
-#include "sorting_networks.hpp"
+#include "tests_utils.hpp"
 
 namespace cav {
 
 TEST_CASE("Sorting networks int") {
-    for (size_t i = 0; i < 1000; ++i) {
-        int arr[32] = {};
-        for (size_t s = 2; s <= 32; ++s) {
-            auto subseq = make_span(arr, s);
+    auto arr  = std::vector<int>(10000);
+    auto buff = std::vector<int>(10000);
+    for (size_t i = 0; i < 100; ++i) {
+        for (size_t s = 2; s <= 10000; s = s * 17 / 3) {
+            auto subseq = make_span(arr.data(), s);
 
             for (int& elem : subseq)
                 elem = rand() % 1024;
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff));
             CHECK(is_sorted(subseq));
 
             for (int& elem : subseq)
                 elem = rand() % 1024;
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq, [](int x) { return -x; }));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff, [](int x) { return -x; }));
             CHECK(is_sorted(subseq, [](int x) { return -x; }));
         }
     }
 }
 
 TEST_CASE("Sorting networks double") {
-    for (size_t i = 0; i < 1000; ++i) {
-        double arr[32] = {};
-        for (size_t s = 2; s <= 32; ++s) {
-            auto subseq = make_span(arr, s);
+    auto arr  = std::vector<double>(10000);
+    auto buff = std::vector<double>(10000);
+    for (size_t i = 0; i < 100; ++i) {
+        for (size_t s = 2; s <= 10000; s = s * 17 / 3) {
+            auto subseq = make_span(arr.data(), s);
 
             for (double& elem : subseq)
                 elem = rand() / 1024.0;
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff));
             CHECK(is_sorted(subseq));
 
             for (double& elem : subseq)
                 elem = rand() / 1024.0;
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq, [](double x) { return -x; }));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff, [](double x) { return -x; }));
             CHECK(is_sorted(subseq, [](double x) { return -x; }));
         }
     }
 }
 
 TEST_CASE("Sorting networks int") {
-    for (size_t i = 0; i < 1000; ++i) {
-        ClassType<int> arr[32] = {};
-        for (size_t s = 2; s <= 32; ++s) {
-            auto subseq = make_span(arr, s);
+    auto arr  = std::vector<ClassType<int>>(10000);
+    auto buff = std::vector<ClassType<int>>(10000);
+    for (size_t i = 0; i < 100; ++i) {
+        for (size_t s = 2; s <= 10000; s = s * 17 / 3) {
+            auto subseq = make_span(arr.data(), s);
 
             for (ClassType<int>& elem : subseq)
                 elem = ClassType<int>(rand() % 1024);
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff));
             CHECK(is_sorted(subseq));
 
             for (ClassType<int>& elem : subseq)
                 elem = ClassType<int>(rand() % 1024);
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq, [](ClassType<int> x) { return -x; }));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff, [](ClassType<int> x) { return -x; }));
             CHECK(is_sorted(subseq, [](ClassType<int> x) { return -x; }));
         }
     }
 }
 
 TEST_CASE("Sorting networks double") {
-    for (size_t i = 0; i < 1000; ++i) {
-        ClassType<double> arr[32] = {};
-        for (size_t s = 2; s <= 32; ++s) {
-            auto subseq = make_span(arr, s);
+    auto arr  = std::vector<ClassType<double>>(10000);
+    auto buff = std::vector<ClassType<double>>(10000);
+    for (size_t i = 0; i < 100; ++i) {
+        for (size_t s = 2; s <= 10000; s = s * 17 / 3) {
+            auto subseq = make_span(arr.data(), s);
 
             for (ClassType<double>& elem : subseq)
                 elem = ClassType<double>(rand() / 1024.0);
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff));
             CHECK(is_sorted(subseq));
 
             for (ClassType<double>& elem : subseq)
                 elem = ClassType<double>(rand() / 1024.0);
-            REQUIRE_NOTHROW(cav::net_dispatch(subseq, [](ClassType<double> x) { return -x; }));
+            REQUIRE_NOTHROW(net_sort<int>(subseq, buff, [](ClassType<double> x) { return -x; }));
             CHECK(is_sorted(subseq, [](ClassType<double> x) { return -x; }));
         }
     }
