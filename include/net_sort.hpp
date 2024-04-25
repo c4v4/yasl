@@ -4,11 +4,7 @@
 #ifndef CAV_INCLUDE_NET_SORT_HPP
 #define CAV_INCLUDE_NET_SORT_HPP
 
-#ifndef NDEBUG
-#define CAV_MAX_NET_SIZE 8U
-#else
 #define CAV_MAX_NET_SIZE 32U
-#endif
 
 #ifndef NDEBUG
 #include <algorithm>
@@ -27,25 +23,25 @@ namespace {
         assert(std::is_sorted(std::begin(half2), std::end(half2), sort::make_comp_wrap(key)));
 
         SzT i = 0, j = 0, k = 0;
-        if (size(half1) > 0 && size(half2) > 0) {
+        if (cav::size(half1) > 0 && size(half2) > 0) {
             auto ki = key(half1[i]), kj = key(half2[j]);
             for (;;) {  // ugly, but avoids redundant invocations to key()
                 if (ki < kj) {
                     move_uninit(buffer[k++], half1[i++]);
-                    if (i == size(half1))
+                    if (i == cav::size(half1))
                         break;
                     ki = key(half1[i]);
                 } else {
                     move_uninit(buffer[k++], half2[j++]);
-                    if (j == size(half2))
+                    if (j == cav::size(half2))
                         break;
                     kj = key(half2[j]);
                 }
             }
         }
-        while (i < size(half1))
+        while (i < cav::size(half1))
             move_uninit(buffer[k++], half1[i++]);
-        while (j < size(half2))
+        while (j < cav::size(half2))
             move_uninit(buffer[k++], half2[j++]);
 
         assert(std::is_sorted(std::begin(buffer), std::end(buffer), sort::make_comp_wrap(key)));
@@ -58,20 +54,20 @@ namespace {
     /// always grow until they can be merged).
     template <typename SzT, typename C1, typename C2, typename K>
     SzT chunks_merge(C1& cont1, C2& cont2, SzT curr_size, SzT old_residual, K key) {
-        SzT csize = size(cont1);
+        SzT csize = cav::size(cont1);
         SzT i     = 0;
         for (; i < csize - curr_size; i += (2 * curr_size)) {
             SzT  residual = min(curr_size, csize - i - curr_size);
             auto piece1   = make_span(std::begin(cont1) + i, curr_size);
             auto piece2   = make_span(std::begin(cont1) + i + curr_size, residual);
-            auto out      = make_span(std::begin(cont2) + i, size(piece1) + size(piece2));
+            auto out      = make_span(std::begin(cont2) + i, cav::size(piece1) + size(piece2));
             merge<SzT>(piece1, piece2, out, key);
         }
 
         if (i < csize) {  // manage residual
             auto piece1 = make_span(std::begin(cont1) + i, csize - i - old_residual);
-            auto piece2 = make_span(std::begin(cont1) + i + size(piece1), old_residual);
-            auto out    = make_span(std::begin(cont2) + i, size(piece1) + size(piece2));
+            auto piece2 = make_span(std::begin(cont1) + i + cav::size(piece1), old_residual);
+            auto out    = make_span(std::begin(cont2) + i, cav::size(piece1) + size(piece2));
             merge<SzT>(piece1, piece2, out, key);
             return csize - i;
         }
@@ -82,7 +78,7 @@ namespace {
 
 template <typename SzT, typename C1, typename C2, typename K>
 static void net_sort(C1& container, C2& buffer, K key = {}) {
-    SzT csize = size(container);
+    SzT csize = cav::size(container);
 
     for (SzT i = 0; i < csize; i += CAV_MAX_NET_SIZE) {
         SzT  residual = min(CAV_MAX_NET_SIZE, csize - i);

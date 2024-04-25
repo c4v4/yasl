@@ -14,7 +14,6 @@
 
 #include "Span.hpp"
 #include "limits.hpp"
-#include "ska_sort.hpp"
 
 template <typename T, size_t K>
 struct Fat {
@@ -81,9 +80,9 @@ void run_test_loop(char const (&name)[N],
             seq4,
             offsets);
         auto t5 = std::chrono::high_resolution_clock::now();
-        sort_sequence(
-            [&](cav::Span<T*> c) { ska_sort_copy(c.begin(), c.end(), out_buff.begin(), key); },
-            seq5,
+       sort_sequence(
+            [&](cav::Span<T*> c) { std::sort(c.begin(), c.end(), cav::sort::make_comp_wrap(key)); },
+            seq4,
             offsets);
         auto t6 = std::chrono::high_resolution_clock::now();
 
@@ -104,12 +103,12 @@ void run_test_loop(char const (&name)[N],
     }
 
     fmt::print(" {:10.0f} {:10.0f} {:10.0f} {:10.0f} {:10.0f} {:10.0f}\n",
-               1e9 * duration_sec / size(origin),
-               1e9 * duration0_sec / size(origin),
-               1e9 * duration1_sec / size(origin),
-               1e9 * duration2_sec / size(origin),
-               1e9 * duration3_sec / size(origin),
-               1e9 * duration4_sec / size(origin));
+               1e9 * duration_sec / cav::size(origin),
+               1e9 * duration0_sec / cav::size(origin),
+               1e9 * duration1_sec / cav::size(origin),
+               1e9 * duration2_sec / cav::size(origin),
+               1e9 * duration3_sec / cav::size(origin),
+               1e9 * duration4_sec / cav::size(origin));
 }
 
 template <typename T, size_t N>

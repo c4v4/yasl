@@ -11,7 +11,7 @@
 #include <cstdint>
 
 #include "sort_utils.hpp"
-#include "util_functions.hpp"
+#include "utils.hpp"
 
 namespace cav {
 
@@ -24,7 +24,7 @@ namespace {
 
         for (auto& elem : cont1) {
             auto k = nth_byte(to_uint(key(elem)), b);
-            assert(counters[k] < size(cont2));
+            assert(counters[k] < cav::size(cont2));
             move_uninit(cont2[counters[k]], elem);
             ++counters[k];
         }
@@ -42,7 +42,7 @@ namespace {
 
     template <typename SzT, typename C1, typename C2, typename K = IdentityFtor>
     BegEnd<SzT> byte_sort_msd(C1& cont, C2& buff, K key, uint8_t b, SzT (&counters)[256]) {
-        if (size(cont) < sizeof(sort::key_t<C1, K>) * 12) {
+        if (cav::size(cont) < sizeof(sort::key_t<C1, K>) * 12) {
             insertion_sort(cont, key);
             return {0, 0};
         }
@@ -51,7 +51,7 @@ namespace {
         for (auto& elem : cont)
             ++counters[nth_byte(to_uint(key(elem)), b)];
 
-        for (SzT accum = 0; accum < size(cont); ++end) {
+        for (SzT accum = 0; accum < cav::size(cont); ++end) {
             SzT old_count = counters[end];
             counters[end] = accum;
             beg           = accum == 0 ? end : beg;
@@ -64,7 +64,7 @@ namespace {
             move_uninit(buff[counters[k]], elem);
             ++counters[k];
         }
-        assert(counters[beg] > 0 && counters[end - 1] == size(cont));
+        assert(counters[beg] > 0 && counters[end - 1] == cav::size(cont));
         assert(std::is_sorted(std::begin(buff),
                               std::end(buff),
                               sort::make_comp_wrap([&](sort::value_t<C1> const& c) {
@@ -143,7 +143,7 @@ static void radix_sort_msd(C1&     cont,
         SzT sub_sub_beg = 0;
         for (SzT ss = ssrng.beg; ss < ssrng.end; sub_sub_beg = sub_counts[ss++]) {
             auto sub_sub_cont = make_span(sub_cont, sub_sub_beg, sub_counts[ss]);
-            if (size(sub_sub_cont) <= 4) {
+            if (cav::size(sub_sub_cont) <= 4) {
                 net_dispatch(sub_sub_cont, key);
                 continue;
             }
