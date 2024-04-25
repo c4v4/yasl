@@ -43,6 +43,10 @@ public:
         return *this;
     }
 
+    bool operator==(ClassType const& other) const noexcept {
+        return elem == other.elem;
+    }
+
     bool operator<(ClassType const& other) const noexcept {
         return elem < other.elem;
     }

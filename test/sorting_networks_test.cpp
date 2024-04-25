@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 
-#include "tests_utils.hpp"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
 
@@ -11,6 +10,7 @@
 #define CAV_MAX_NET_SIZE 32U
 #include "Span.hpp"
 #include "sorting_networks.hpp"
+#include "tests_utils.hpp"
 
 namespace cav {
 

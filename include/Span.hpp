@@ -16,6 +16,7 @@ template <typename ItT>
 struct Span {
     using iterator        = ItT;
     using size_type       = std::size_t;
+    using ret_type        = decltype(std::declval<ItT>()[0]);  // does not discard constness
     using value_type      = typename std::iterator_traits<ItT>::value_type;
     using reference       = typename std::iterator_traits<ItT>::reference;
     using pointer         = typename std::iterator_traits<ItT>::pointer;
@@ -24,47 +25,50 @@ struct Span {
     iterator start;
     iterator finish;
 
-    [[nodiscard]] size_type size() const {
-        return finish - start;
+    size_type size() const {
+        assert(finish >= start);
+        return static_cast<size_t>(finish - start);
     }
 
-    [[nodiscard]] bool empty() const {
+    bool empty() const {
+        assert(finish >= start);
         return start == finish;
     }
 
-    [[nodiscard]] iterator begin() const {
+    reference back() const {
+        assert(start < finish);
+        return *(finish - 1);
+    }
+
+    iterator begin() const {
+        assert(finish >= start);
         return start;
     }
 
-    [[nodiscard]] iterator end() const {
+    iterator end() const {
+        assert(finish >= start);
         return finish;
     }
 
-    [[nodiscard]] value_type& operator[](size_type i) const {
+    ret_type operator[](size_type i) const {
         assert(finish > start);
-        assert(i < static_cast<size_t>(finish - start));
+        assert(i < size());
         return start[i];
     }
 };
 
 template <typename ItT>
-[[nodiscard]] inline Span<ItT> make_span() {
-    return {{}, {}};
-}
-
-template <typename ItT>
-[[nodiscard]] inline Span<ItT> make_span(ItT beg, ItT end) {
+inline Span<ItT> make_span(ItT beg, ItT end) {
     return {beg, end};
 }
 
 template <typename ItT>
-[[nodiscard]] inline Span<ItT> make_span(ItT beg, size_t sz) {
+inline Span<ItT> make_span(ItT beg, size_t sz) {
     return {beg, beg + sz};
 }
 
 template <typename ConT>
-[[nodiscard]] inline auto make_span(ConT&& cont, size_t beg, size_t end)
-    -> Span<container_iterator_t<ConT>> {
+inline auto make_span(ConT&& cont, size_t beg, size_t end) -> Span<container_iterator_t<ConT>> {
     return {std::begin(cont) + beg, std::begin(cont) + end};
 }
 
