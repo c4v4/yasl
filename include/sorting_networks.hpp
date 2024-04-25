@@ -99,7 +99,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "util_functions.hpp"
+#include "utils.hpp"
 
 namespace cav {
 namespace netsort {
@@ -2711,7 +2711,7 @@ namespace netsort {
 
 template <typename C, typename K = IdentityFtor>
 void net_dispatch(C& container, K key = {}) {
-    switch (size(container)) {
+    switch (cav::size(container)) {
     case 0:
     case 1:
         return;
@@ -2807,7 +2807,7 @@ void net_dispatch(C& container, K key = {}) {
         return netsort::s31(container, key);
 #if CAV_MAX_NET_SIZE > 31
     default:
-        assert(size(container) == 32);
+        assert(cav::size(container) == 32);
         return netsort::s32(container, key);
 #endif
 #endif

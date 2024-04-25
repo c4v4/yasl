@@ -12,8 +12,8 @@
 
 #include "Span.hpp"
 #include "limits.hpp"
-#include "ska_sort.hpp"
 #include "sort.hpp"
+#include "utils.hpp"
 
 template <typename T, size_t K>
 struct Fat {
@@ -60,18 +60,18 @@ void run_test_loop(cav::Sorter<>& sorter, std::vector<T> const& origin, int sub_
         auto t0 = std::chrono::high_resolution_clock::now();
         sort_sequence([&](cav::Span<T*> c) { sorter.sort(c, key); }, seq0, offsets);
         auto t1 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { sorter.nth_element(c, size(c) / 2, key); },
+        sort_sequence([&](cav::Span<T*> c) { sorter.nth_element(c, cav::size(c) / 2, key); },
                       seq1,
                       offsets);
         auto t2 = std::chrono::high_resolution_clock::now();
-        sort_sequence([&](cav::Span<T*> c) { sorter.dutch_nth_elem(c, size(c) / 2, key); },
+        sort_sequence([&](cav::Span<T*> c) { sorter.dutch_nth_elem(c, cav::size(c) / 2, key); },
                       seq2,
                       offsets);
         auto t3 = std::chrono::high_resolution_clock::now();
         sort_sequence(
             [&](cav::Span<T*> c) {
                 std::nth_element(c.begin(),
-                                 c.begin() + size(c) / 2,
+                                 c.begin() + cav::size(c) / 2,
                                  c.end(),
                                  cav::sort::make_comp_wrap(key));
             },
@@ -97,10 +97,10 @@ void run_test_loop(cav::Sorter<>& sorter, std::vector<T> const& origin, int sub_
     }
 
     fmt::print(" {:10.0f} {:10.0f} {:10.0f} {:10.0f}\n",
-               1e9 * duration0_sec / size(origin),
-               1e9 * duration1_sec / size(origin),
-               1e9 * duration2_sec / size(origin),
-               1e9 * duration3_sec / size(origin));
+               1e9 * duration0_sec / cav::size(origin),
+               1e9 * duration1_sec / cav::size(origin),
+               1e9 * duration2_sec / cav::size(origin),
+               1e9 * duration3_sec / cav::size(origin));
 }
 
 template <typename T, size_t N>

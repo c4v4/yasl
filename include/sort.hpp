@@ -13,7 +13,7 @@
 #include "net_sort.hpp"
 #include "radix_sort.hpp"
 #include "sort_utils.hpp"
-#include "util_functions.hpp"
+#include "utils.hpp"
 
 #ifndef NDEBUG
 #include <algorithm>
@@ -76,8 +76,8 @@ private:
 private:
     template <typename C, typename V, typename K>
     void _three_partition(C& container, V mid_k, size_type mid_start, K key) {
-        auto      buffer = _get_span<sort::value_t<C>>(size(container));
-        size_type front = 0, back = size(container) - 1;
+        auto      buffer = _get_span<sort::value_t<C>>(cav::size(container));
+        size_type front = 0, back = cav::size(container) - 1;
         for (auto& elem : container) {
             auto      k   = to_uint(key(elem));
             size_type idx = k < mid_k ? front++ : k > mid_k ? back-- : mid_start++;
@@ -106,8 +106,8 @@ public:
         size_type           nth_copy = nth;
 
         size_type counters[256] = {};
-        auto      key_buff      = _get_span<sort::ukey_t<C, K>>(size(container));
-        for (size_type i = 0; i < size(container); ++i) {
+        auto      key_buff      = _get_span<sort::ukey_t<C, K>>(cav::size(container));
+        for (size_type i = 0; i < cav::size(container); ++i) {
             key_buff[i] = to_uint(key(container[i]));
             ++counters[nth_byte<n_bytes - 1U>(key_buff[i])];
         }
@@ -142,7 +142,7 @@ public:
 #ifndef NDEBUG
         for (size_type i = 0; i < nth; ++i)
             assert(to_uint(key(container[i])) <= to_uint(key(container[nth])));
-        for (size_type i = nth; i < size(container); ++i)
+        for (size_type i = nth; i < cav::size(container); ++i)
             assert(to_uint(key(container[i])) >= to_uint(key(container[nth])));
 #endif
     }
@@ -209,9 +209,9 @@ public:
         for (auto const& elem : container)
             ++counters[0][nth_byte<n_bytes - 1U>(to_uint(key(elem)))];
 
-        auto      val_buff          = _get_span<sort::value_t<C>>(size(container));
+        auto      val_buff          = _get_span<sort::value_t<C>>(cav::size(container));
         size_type begs[n_bytes + 1] = {}, ends[n_bytes + 1] = {};
-        ends[n_bytes] = size(container);
+        ends[n_bytes] = cav::size(container);
 
         for (size_type b = n_bytes - 1;;) {
             _byte_nth_elem(container, val_buff, nth, key, b, counters, begs, ends);
@@ -228,22 +228,22 @@ public:
 public:
     template <typename C, typename K = IdentityFtor>
     void radix_sort_lsd(C& container, K key = {}) {
-        auto val_buff = _get_span<sort::value_t<C>>(size(container));
+        auto val_buff = _get_span<sort::value_t<C>>(cav::size(container));
         cav::radix_sort_lsd<size_type>(container, val_buff, key);
     }
 
     template <typename C, typename K = IdentityFtor>
     void radix_sort_msd(C& container, K key = {}) {
-        auto val_buff = _get_span<sort::value_t<C>>(size(container));
+        auto val_buff = _get_span<sort::value_t<C>>(cav::size(container));
         cav::radix_sort_msd<size_type>(container, val_buff, key);
     }
 
     template <typename C, typename K = IdentityFtor>
     void net_sort(C& container, K key = {}) {
-        if (size(container) <= CAV_MAX_NET_SIZE)
+        if (cav::size(container) <= CAV_MAX_NET_SIZE)
             return net_dispatch(container, key);
 
-        auto buffer = _get_span<sort::value_t<C>>(size(container));
+        auto buffer = _get_span<sort::value_t<C>>(cav::size(container));
         cav::net_sort<size_type>(container, buffer, key);
     }
 
@@ -267,10 +267,10 @@ public:
         std::is_same<sort::value_t<C>, sort::key_t<C, K>>::value&& std::is_empty<K>::value) {
         // Best effort to detect containers of native types using themselves as a key
 
-        assert(size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
+        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
 
         // Native types are usually better handled with sorting networks + lsd radix sort
-        if (size(container) < sizeof(sort::key_t<C, K>) * 24)
+        if (cav::size(container) < sizeof(sort::key_t<C, K>) * 24)
             net_sort(container, key);
         else
             radix_sort_lsd(container, key);
@@ -280,11 +280,11 @@ public:
     auto sort(C& container, K key = {})
         -> CAV_REQUIRES(!(std::is_same<sort::value_t<C>, sort::key_t<C, K>>::value &&
                           std::is_empty<K>::value)) {
-        assert(size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
+        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
 
         static constexpr size_t val_size = sizeof(sort::value_t<C>);
         // In other scenarios, insertion_sort does a better job for small containers
-        if (size(container) < sizeof(sort::key_t<C, K>) * 18)
+        if (cav::size(container) < sizeof(sort::key_t<C, K>) * 18)
             if (std::is_empty<K>::value)
                 insertion_sort(container, key);
             else
@@ -302,7 +302,7 @@ public:
 
 
             // If the key is smaller than 8 bytes or the type is relatively small -> lsd radix sort
-            if (sizeof(sort::key_t<C, K>) <= 4U || size(container) < msd_rdx_thresh)
+            if (sizeof(sort::key_t<C, K>) <= 4U || cav::size(container) < msd_rdx_thresh)
                 radix_sort_lsd(container, key);
 
             // Otherwise, msd radix sort perform better with types under 64 bytes
@@ -315,8 +315,8 @@ public:
 
     template <typename C, typename K = IdentityFtor>
     void nth_element(C& container, size_type nth, K key = {}) {
-        assert(size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
-        if (size(container) < 48U)
+        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
+        if (cav::size(container) < 48U)
             sort(container, key);
         else
             radix_nth_elem(container, nth, key);
@@ -324,7 +324,7 @@ public:
 #ifndef NDEBUG
         for (size_type i = 0; i < nth; ++i)
             assert(to_uint(key(container[i])) <= to_uint(key(container[nth])));
-        for (size_type i = nth; i < size(container); ++i)
+        for (size_type i = nth; i < cav::size(container); ++i)
             assert(to_uint(key(container[i])) >= to_uint(key(container[nth])));
 #endif
     }

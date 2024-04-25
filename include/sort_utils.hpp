@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "util_functions.hpp"
+#include "utils.hpp"
 
 namespace cav {
 /////////////////////////// KEYS CONVERSION ///////////////////////////
@@ -112,7 +112,7 @@ static auto move_uninit(D& dest, S& src) -> CAV_REQUIRES(std::is_trivially_copya
 template <typename D, typename S>
 static auto move_uninit_span(D&& dest, S&& src)
     -> CAV_REQUIRES(!std::is_trivially_copyable<sort::value_t<S>>::value) {
-    for (size_t i = 0; i < size(src); ++i)
+    for (size_t i = 0; i < cav::size(src); ++i)
         move_uninit(dest[i], src[i]);
 }
 
@@ -123,13 +123,13 @@ static auto move_uninit_span(D&& dest, S&& src)
     static_assert(std::is_same<sort::value_t<D>, sort::value_t<S>>::value, "Values mismatch");
     std::memcpy(std::addressof(dest[0]),
                 std::addressof(src[0]),
-                sizeof(sort::value_t<S>) * size(src));
+                sizeof(sort::value_t<S>) * cav::size(src));
 }
 
 /////////////////////////////// INSERTION SORT ///////////////////////////////////////
 template <typename C, typename K = IdentityFtor>
 static void insertion_sort(C& cont, K key = {}) {
-    if (size(cont) < 2)
+    if (cav::size(cont) < 2)
         return;
 
     auto cbeg = std::begin(cont);

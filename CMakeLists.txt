@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.16)
 project(yasl)
 include(FetchContent)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 
 # Vscode integration for included libraries
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -33,3 +33,13 @@ target_link_libraries(sort PUBLIC ${LIBRARIES})
 
 add_executable(nth_elem src/nth_elem.cpp)
 target_link_libraries(nth_elem PUBLIC ${LIBRARIES})
+
+########################################
+############## Unit tests ##############
+########################################
+option(UNIT_TESTS "Build unit tests." OFF)
+message(STATUS "UNIT_TESTS: ${UNIT_TESTS}")
+if (UNIT_TESTS) 
+    enable_testing()
+    add_subdirectory(test)
+endif() 

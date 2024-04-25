@@ -7,7 +7,7 @@
 #include <cassert>
 #include <iterator>
 
-#include "util_functions.hpp"
+#include "utils.hpp"
 
 namespace cav {
 
