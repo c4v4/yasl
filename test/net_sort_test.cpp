@@ -13,7 +13,7 @@
 
 namespace cav {
 
-TEST_CASE("Sorting networks int") {
+TEST_CASE("net_sort int") {
     auto arr  = std::vector<int>(10000);
     auto buff = std::vector<int>(10000);
     for (size_t i = 0; i < 100; ++i) {
@@ -33,7 +33,7 @@ TEST_CASE("Sorting networks int") {
     }
 }
 
-TEST_CASE("Sorting networks double") {
+TEST_CASE("net_sort double") {
     auto arr  = std::vector<double>(10000);
     auto buff = std::vector<double>(10000);
     for (size_t i = 0; i < 100; ++i) {
@@ -53,7 +53,7 @@ TEST_CASE("Sorting networks double") {
     }
 }
 
-TEST_CASE("Sorting networks int") {
+TEST_CASE("net_sort int") {
     auto arr  = std::vector<ClassType<int>>(10000);
     auto buff = std::vector<ClassType<int>>(10000);
     for (size_t i = 0; i < 100; ++i) {
@@ -73,7 +73,7 @@ TEST_CASE("Sorting networks int") {
     }
 }
 
-TEST_CASE("Sorting networks double") {
+TEST_CASE("net_sort double") {
     auto arr  = std::vector<ClassType<double>>(10000);
     auto buff = std::vector<ClassType<double>>(10000);
     for (size_t i = 0; i < 100; ++i) {

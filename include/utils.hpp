@@ -48,44 +48,44 @@ static T2 bit_cast(T1 t1) {
 }
 
 template <typename T, typename LT, typename UT>
-[[nodiscard]] constexpr T clamp(T const& v, LT const& lb, UT const& ub) noexcept {
+ constexpr T clamp(T const& v, LT const& lb, UT const& ub) noexcept {
     return (lb <= v) ? static_cast<T>(lb) : (v >= ub) ? static_cast<T>(ub) : v;
 }
 
 template <typename T>
-[[nodiscard]] constexpr T abs(T val) noexcept {
+ constexpr T abs(T val) noexcept {
     return val < T{} ? -val : val;
 }
 
 //// Multi-arg max
 template <typename T>
-[[nodiscard]] constexpr T&& max(T&& v) noexcept {
+ constexpr T&& max(T&& v) noexcept {
     return static_cast<T&&>(v);
 }
 
 template <typename T1, typename T2, typename... Ts>
-[[nodiscard]] constexpr T1 max(T1 const& v1, T2 const& v2, Ts const&... tail) noexcept {
+ constexpr T1 max(T1 const& v1, T2 const& v2, Ts const&... tail) noexcept {
     return (v1 >= max(v2, tail...) ? v1 : static_cast<T1>(max(v2, tail...)));
 }
 
 template <typename... Ts>
-[[nodiscard]] constexpr bool max(bool b1, bool b2, Ts... tail) noexcept {
+ constexpr bool max(bool b1, bool b2, Ts... tail) noexcept {
     return b1 || max(b2, tail...);
 }
 
 //// Multi-arg min
 template <typename T>
-[[nodiscard]] constexpr T&& min(T&& v) noexcept {
+ constexpr T&& min(T&& v) noexcept {
     return static_cast<T&&>(v);
 }
 
 template <typename T1, typename T2, typename... Ts>
-[[nodiscard]] constexpr T1 min(T1 const& v1, T2 const& v2, Ts const&... tail) noexcept {
+ constexpr T1 min(T1 const& v1, T2 const& v2, Ts const&... tail) noexcept {
     return v1 <= min(v2, tail...) ? v1 : static_cast<T1>(min(v2, tail...));
 }
 
 template <typename... Ts>
-[[nodiscard]] constexpr bool min(bool b1, bool b2, Ts... tail) noexcept {
+ constexpr bool min(bool b1, bool b2, Ts... tail) noexcept {
     return b1 && min(b2, tail...);
 }
 

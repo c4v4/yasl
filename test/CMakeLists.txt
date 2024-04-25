@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2024 Francesco Cavaliere <francescocava95@gmail.com>
 # SPDX-License-Identifier: MIT
+set(CMAKE_CXX_STANDARD 11)
 
 FetchContent_Declare(doctest GIT_REPOSITORY https://github.com/doctest/doctest GIT_TAG master)
 FetchContent_MakeAvailable(doctest)
@@ -20,4 +21,6 @@ function(add_cft_test name)
 endfunction()
 
 add_cft_test(sorting_networks_test)
+add_cft_test(sort_utils_test)
+add_cft_test(Span_test)
 add_cft_test(net_sort_test)
