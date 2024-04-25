@@ -91,7 +91,7 @@ private:
             ++it;
         while (it != std::end(container) && to_uint(key(*it)) == mid_k)
             ++it;
-        assert(it == std::begin(container)) + mid_start;
+        assert(it == std::begin(container) + mid_start);
         while (it != std::end(container) && to_uint(key(*it)) > mid_k)
             ++it;
         assert(it == std::end(container));
@@ -267,7 +267,8 @@ public:
         std::is_same<sort::value_t<C>, sort::key_t<C, K>>::value&& std::is_empty<K>::value) {
         // Best effort to detect containers of native types using themselves as a key
 
-        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
+        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT "
+                                                                  "max");
 
         // Native types are usually better handled with sorting networks + lsd radix sort
         if (cav::size(container) < sizeof(sort::key_t<C, K>) * 24)
@@ -280,7 +281,8 @@ public:
     auto sort(C& container, K key = {})
         -> CAV_REQUIRES(!(std::is_same<sort::value_t<C>, sort::key_t<C, K>>::value &&
                           std::is_empty<K>::value)) {
-        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
+        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT "
+                                                                  "max");
 
         static constexpr size_t val_size = sizeof(sort::value_t<C>);
         // In other scenarios, insertion_sort does a better job for small containers
@@ -309,13 +311,13 @@ public:
             else
                 radix_sort_msd(container, key);
         }
-        assert(
-            std::is_sorted(std::begin(container), std::end(container), sort::make_comp_wrap(key)));
+        assert(is_sorted(container, key));
     }
 
     template <typename C, typename K = IdentityFtor>
     void nth_element(C& container, size_type nth, K key = {}) {
-        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT max");
+        assert(cav::size(container) < limits<size_type>::max() && "Container size exceeds SizeT "
+                                                                  "max");
         if (cav::size(container) < 48U)
             sort(container, key);
         else

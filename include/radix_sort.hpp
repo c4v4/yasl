@@ -65,11 +65,8 @@ namespace {
             ++counters[k];
         }
         assert(counters[beg] > 0 && counters[end - 1] == cav::size(cont));
-        assert(std::is_sorted(std::begin(buff),
-                              std::end(buff),
-                              sort::make_comp_wrap([&](sort::value_t<C1> const& c) {
-                                  return nth_byte(to_uint(key(c)), b);
-                              })));
+        assert(is_sorted(buff,
+                         [&](sort::value_t<C1> const& c) { return nth_byte(to_uint(key(c)), b); }));
         return {beg, end};
     }
 }  // namespace
@@ -102,8 +99,7 @@ static void radix_sort_lsd(C1& container, C2& buff, K key = {}) {
     }
 }
 
-#define CHECK_CONT(cont, key) \
-    assert(std::is_sorted(std::begin(cont), std::end(cont), sort::make_comp_wrap(key)))
+#define CHECK_CONT(cont, key) assert(is_sorted(cont, key))
 
 template <typename SzT, typename C1, typename C2, typename K = IdentityFtor>
 static void radix_sort_msd(C1&     cont,
@@ -149,9 +145,7 @@ static void radix_sort_msd(C1&     cont,
             }
             auto sub_sub_buff = make_span(sub_buff, sub_sub_beg, sub_counts[ss]);
             radix_sort_msd<SzT>(sub_sub_cont, sub_sub_buff, key, b - 2);
-            assert(std::is_sorted(std::begin(sub_sub_cont),
-                                  std::end(sub_sub_cont),
-                                  sort::make_comp_wrap(key)));
+            assert(is_sorted(sub_sub_cont, key));
         }
     }
 

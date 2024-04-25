@@ -32,7 +32,6 @@ __attribute__((noinline)) void sort_sequence(T&&                     sorter,
     for (size_t o = 0; o < offsets.size() - 1; ++o) {
         auto span = cav::make_span(seq.data() + offsets[o], seq.data() + offsets[o + 1]);
         sorter(span);
-        // assert(std::is_sorted(span.begin(), span.end()));
     }
 }
 
@@ -80,7 +79,7 @@ void run_test_loop(char const (&name)[N],
             seq4,
             offsets);
         auto t5 = std::chrono::high_resolution_clock::now();
-       sort_sequence(
+        sort_sequence(
             [&](cav::Span<T*> c) { std::sort(c.begin(), c.end(), cav::sort::make_comp_wrap(key)); },
             seq4,
             offsets);

@@ -15,18 +15,21 @@ namespace cav {
 template <typename T>
 using no_cvr = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
-template <typename C>
-struct container_metadata {
-    using iterator   = decltype(std::declval<C>().begin());
-    using value_type = no_cvr<decltype(*std::declval<iterator>())>;
-    using size_type  = decltype(std::declval<C>().size());
-};
+template <typename T>
+size_t size(T const& container) {
+    return container.size();
+}
 
 template <typename T, size_t N>
-struct container_metadata<T[N]> {
-    using iterator   = T*;
-    using value_type = T;
-    using size_type  = size_t;
+size_t size(T const (& /*unused*/)[N]) {
+    return N;
+}
+
+template <typename C>
+struct container_metadata {
+    using iterator   = decltype(std::begin(std::declval<C>()));
+    using value_type = no_cvr<decltype(*std::declval<iterator>())>;
+    using size_type  = decltype(::cav::size(std::declval<C>()));
 };
 
 template <typename C>
@@ -103,22 +106,26 @@ bool all(T const& container, O&& op) {
     return true;
 }
 
-template <typename T>
-size_t size(T const& container) {
-    return container.size();
-}
-
-template <typename T, size_t N>
-size_t size(T const (& /*unused*/)[N]) {
-    return N;
-}
-
 struct IdentityFtor {
     template <typename T>
     T&& operator()(T&& t) const noexcept {
         return std::forward<T>(t);
     }
 };
+
+template <typename C, typename K = IdentityFtor>
+bool is_sorted(C const& container, K&& key = IdentityFtor{}) {
+    if (cav::size(container) <= 1)
+        return true;
+    auto prev_key = key(*std::begin(container));
+    for (auto const& elem : container) {
+        auto elem_key = key(elem);
+        if (elem_key < prev_key)
+            return false;
+        prev_key = elem_key;
+    }
+    return true;
+}
 
 }  // namespace cav
 
