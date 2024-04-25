@@ -4,6 +4,11 @@ SPDX-License-Identifier: MIT
 -->
 
 # Yet Another Sorting Library
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![codecov](https://codecov.io/gh/c4v4/yasl/graph/badge.svg?token=AYB5IHFSCD)](https://codecov.io/gh/c4v4/yasl)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/f82fe574441d4c26b7ed304ad519ed2a)](https://app.codacy.com/gh/c4v4/yasl/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![REUSE status](https://api.reuse.software/badge/github.com/c4v4/yasl)](https://api.reuse.software/info/github.com/c4v4/yasl)
+
 
 A repo where I fool around with different sorting algorithms. 
 I wanted to see if I could find an algorithm faster than `std::sort` when I can make some extra assumptions. 

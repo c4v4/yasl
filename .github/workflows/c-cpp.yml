@@ -1,0 +1,102 @@
+name: Ubuntu CI
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations.
+      fail-fast: false
+
+      matrix:
+        os: [ubuntu-latest]
+        build_type: [Release, Debug]
+        include:
+          - os: ubuntu-latest
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            cpp_compiler: clang++
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Fix kernel mmap rnd bits
+      # Asan in llvm 14 provided in ubuntu 22.04 is incompatible with
+      # high-entropy ASLR in much newer kernels that GitHub runners are
+      # using leading to random crashes: https://reviews.llvm.org/D148280
+      run: sudo sysctl vm.mmap_rnd_bits=28
+      
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ github.workspace }}/build
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DUNIT_TESTS=1
+        -S ${{ github.workspace }}
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} -j
+
+    - name: Test
+      run: ctest  --test-dir ${{ github.workspace }}/build --output-on-failure --build-config ${{ matrix.build_type }} --timeout 600 -j
+
+    - name: Install lcov
+      if: matrix.cpp_compiler == 'g++'
+      run: sudo apt-get install lcov
+    
+    - name: Build coverage report
+      if: matrix.cpp_compiler == 'g++'
+      run: lcov -c -d build -o ${{ github.workspace }}/coverage/tests_${{ matrix.build_type }}_cov.info
+
+    - uses: actions/upload-artifact@v3
+      if: matrix.cpp_compiler == 'g++'
+      with:
+        name: coverage
+        path: ${{ github.workspace }}/coverage/tests_*_cov.info
+
+
+  Coverage:
+    name: "Upload coverage report"
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+
+      - name: Install lcov
+        run: sudo apt-get install lcov
+
+      - name: Merge Release and Debug reports
+        run: lcov -a ${{ github.workspace }}/coverage/tests_release_cov.info -a ${{ github.workspace }}/coverage/tests_debug_cov.info -o ${{ github.workspace }}/coverage/tests_cov.info
+
+      - name: Only select CFT library files
+        run: lcov -e ${{ github.workspace }}/coverage/tests_cov.info yasl/include/*/ -o ${{ github.workspace }}/coverage/tests_cov.info
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: c4v4/yasl
+          file: ${{ github.workspace }}/coverage/tests_cov.info
+
+  Reuse-lint:
+    name: "Check Reuse compliance"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+      - name: Install REUSE tool
+        run:  python -m pip install reuse
+      - name: Run REUSE lint
+        run: reuse lint

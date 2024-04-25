@@ -133,9 +133,9 @@ bool is_nth_elem(C const& container, size_t nth, K key = IdentityFtor{}) {
     return true;
 }
 
-#ifndef NDEBUG
 template <typename C, typename K = IdentityFtor>
 void assert_sorted(C const& container, K key = IdentityFtor{}) {
+#ifndef NDEBUG
     if (cav::size(container) <= 1)
         return;
     auto prev_key = key(*std::begin(container));
@@ -144,18 +144,20 @@ void assert_sorted(C const& container, K key = IdentityFtor{}) {
         assert(elem_key >= prev_key);
         prev_key = elem_key;
     }
+#endif
 }
 
 template <typename C, typename K = IdentityFtor>
 void assert_nth_elem(C const& container, size_t nth, K key = IdentityFtor{}) {
+#ifndef NDEBUG
     if (cav::size(container) <= 1)
         return;
     for (size_t i = 0; i < nth; ++i)
         assert(key(container[i]) <= key(container[nth]));
     for (size_t i = nth; i < cav::size(container); ++i)
         assert(key(container[i]) >= key(container[nth]));
-}
 #endif
+}
 
 
 }  // namespace cav
