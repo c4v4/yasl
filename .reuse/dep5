@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: yasl
+Upstream-Contact: Francesco Cavaliere <francescocava95@gmail.com>
+Source: https://github.com/c4v4/yasl
+
+Files: .*
+Copyright: 2024 Francesco Cavaliere <francescocava95@gmail.com>
+License: MIT
