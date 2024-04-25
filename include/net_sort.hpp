@@ -19,21 +19,21 @@ namespace cav {
 namespace {
     /////////////////////// SORTING NETWORKS SORT //////////////////////////////
     template <typename SzT, typename C1, typename C2, typename C3, typename K>
-    void merge(C1 half1, C2 half2, C3 buffer, K key) {
-        assert(is_sorted(half1, key));
-        assert(is_sorted(half2, key));
+    void merge(C1 half1, C2 half2, C3 buff, K key) {
+        assert_sorted(half1, key);
+        assert_sorted(half2, key);
 
         SzT i = 0, j = 0, k = 0;
         if (cav::size(half1) > 0 && size(half2) > 0) {
             auto ki = key(half1[i]), kj = key(half2[j]);
             for (;;) {  // ugly, but avoids redundant invocations to key()
                 if (ki < kj) {
-                    move_uninit(buffer[k++], half1[i++]);
+                    move_uninit(buff[k++], half1[i++]);
                     if (i == cav::size(half1))
                         break;
                     ki = key(half1[i]);
                 } else {
-                    move_uninit(buffer[k++], half2[j++]);
+                    move_uninit(buff[k++], half2[j++]);
                     if (j == cav::size(half2))
                         break;
                     kj = key(half2[j]);
@@ -41,11 +41,11 @@ namespace {
             }
         }
         while (i < cav::size(half1))
-            move_uninit(buffer[k++], half1[i++]);
+            move_uninit(buff[k++], half1[i++]);
         while (j < cav::size(half2))
-            move_uninit(buffer[k++], half2[j++]);
+            move_uninit(buff[k++], half2[j++]);
 
-        assert(is_sorted(buffer, key));
+        assert_sorted(buff, key);
     }
 
     /// @brief Merges adjacent chunks pairs of size `curr_size` from `cont1` into `cont2`. The
@@ -78,9 +78,9 @@ namespace {
 }  // namespace
 
 template <typename SzT, typename C1, typename C2, typename K = IdentityFtor>
-static void net_sort(C1& container, C2& buffer, K key = {}) {
-    assert(cav::size(container) <= cav::size(buffer));
-    auto buff_span = make_span(std::begin(buffer), cav::size(container));
+static void net_sort(C1& container, C2& buff, K key = {}) {
+    assert(cav::size(container) <= cav::size(buff));
+    auto buff_span = make_span(std::begin(buff), cav::size(container));
     SzT  csize     = cav::size(container);
 
     for (SzT i = 0; i < csize; i += CAV_MAX_NET_SIZE) {

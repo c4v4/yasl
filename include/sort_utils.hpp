@@ -5,7 +5,9 @@
 #define CAV_INCLUDE_SORT_UTILS_HPP
 
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
+#include <iterator>
 
 #include "utils.hpp"
 
@@ -58,14 +60,22 @@ static uint64_t to_uint(double d) noexcept {
 
 namespace sort {
     ///////// SHORTHAND TEMPLATE ALIASES FOR SORTED TYPES METADATA //////////
+    template <typename C, typename K>
+    struct sort_data {
+        using value_type = container_value_type_t<C>;
+        using key_type   = no_cvr<decltype(std::declval<K>()(std::declval<value_type>()))>;
+        using ukey_type  = no_cvr<decltype(to_uint(std::declval<key_type>()))>;
+        static_assert(sizeof(key_type) == sizeof(ukey_type), "Key and ukey size mismatch");
+    };
+
     template <typename C>
     using value_t = container_value_type_t<C>;
 
     template <typename C, typename K>
-    using key_t = no_cvr<decltype(std::declval<K>()(std::declval<value_t<C>>()))>;
+    using key_t = typename sort_data<C, K>::key_type;
 
     template <typename C, typename K>
-    using ukey_t = no_cvr<decltype(to_uint(std::declval<key_t<C, K>>()))>;
+    using ukey_t = typename sort_data<C, K>::ukey_type;
 
     template <typename K>
     struct CompWrap {
@@ -86,11 +96,13 @@ namespace sort {
 
 template <size_t N, typename T>
 static uint8_t nth_byte(T k) noexcept {
+    static_assert(N < sizeof(k), "Nth byte out of range");
     return static_cast<uint8_t>(k >> 8U * N);
 }
 
 template <typename T>
 static uint8_t nth_byte(T k, uint8_t n) noexcept {
+    assert(n < sizeof(k));
     return static_cast<uint8_t>(k >> 8U * n);
 }
 
