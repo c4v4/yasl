@@ -18,11 +18,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         build_type: [Release, Debug]
-        include:
-          - os: ubuntu-latest
-            cpp_compiler: g++
-          - os: ubuntu-latest
-            cpp_compiler: clang++
+        cpp_compiler: [g++, clang++]
 
     steps:
     - uses: actions/checkout@v4
@@ -55,7 +51,7 @@ jobs:
       if: matrix.cpp_compiler == 'g++'
       run: lcov -c -d build -o ${{ github.workspace }}/coverage/tests_${{ matrix.build_type }}_cov.info
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: matrix.cpp_compiler == 'g++'
       with:
         name: coverage
