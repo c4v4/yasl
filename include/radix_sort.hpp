@@ -107,7 +107,7 @@ static void radix_sort_msd(C1&     cont,
                            C2&     buff,
                            K       key = {},
                            uint8_t b   = sizeof(sort::key_t<C1, K>) - 1) {
-    constexpr uint8_t n_bytes = sizeof(sort::key_t<C1, K>);
+    assert(b < sizeof(sort::key_t<C1, K>));
     assert(cav::size(cont) <= cav::size(buff));
     auto buff_span = make_span(std::begin(buff), cav::size(cont));
 
@@ -141,7 +141,7 @@ static void radix_sort_msd(C1&     cont,
         }
         assert(ssrng.beg < ssrng.end);
 
-        if (b - 1 == 0){
+        if (b - 1 == 0) {
             assert_sorted(sub_cont, key);
             continue;
         }
