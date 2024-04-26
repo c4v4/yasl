@@ -40,7 +40,7 @@ struct Sorter {
         SorterData& operator=(SorterData const&)     = delete;
         SorterData& operator=(SorterData&&) noexcept = default;
 
-        SorterData(alloc_type const& alc)
+        explicit SorterData(alloc_type const& alc)
             : alloc_type(alc) {
         }
 
