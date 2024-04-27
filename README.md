@@ -4,13 +4,14 @@ SPDX-License-Identifier: MIT
 -->
 
 # Yet Another Sorting Library
+[![Language](https://img.shields.io/badge/C++-11-purple.svg)](https://en.cppreference.com/w/cpp/11)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Ubuntu CI](https://github.com/c4v4/yasl/actions/workflows/c-cpp.yml/badge.svg?branch=main)](https://github.com/c4v4/yasl/actions/workflows/c-cpp.yml)
 [![codecov](https://codecov.io/gh/c4v4/yasl/graph/badge.svg?token=AYB5IHFSCD)](https://codecov.io/gh/c4v4/yasl)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/f82fe574441d4c26b7ed304ad519ed2a)](https://app.codacy.com/gh/c4v4/yasl/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![REUSE status](https://api.reuse.software/badge/github.com/c4v4/yasl)](https://api.reuse.software/info/github.com/c4v4/yasl)
 
-**!!! THIS REPO IS WORK IN PROGRESS !!!**
+**!!! THIS REPO IS STILL WORK IN PROGRESS !!!**
 
 A repo where I fool around with different sorting algorithms. 
 I wanted to see if I could find an algorithm faster than `std::sort` when I can make some extra assumptions. 
@@ -20,6 +21,38 @@ Here are the assumptions:
 - The things I'm sorting can be represented by a key that is a simple numerical type (like integers or floating points)
 - Focus on struct-like and indirect sorting (more interesting to my needs than plain native types).
 - Values cover a fraction of the whole type range (since I never use the whole range).
+
+## Tests and Coverage
+
+To build the project with unit tests in debug mode:
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DUNIT_TESTS=ON 
+cmake --build build -j
+```
+
+Run the tests:
+
+```bash
+ctest --test-dir build -j
+```
+
+Use the following commands to generate code coverage statistics, note that you need to have [`lcov`](https://github.com/linux-test-project/lcov) installed.
+
+```bash
+mkdir -p coverage
+lcov -c -d build -o coverage/tests_cov.info
+lcov -e coverage/tests_cov.info yasl/include/ -o coverage/tests_cov.info
+```
+
+Finally, to generate an HTML-report that can be viewed from your browser:
+
+```bash
+genhtml coverage/tests_cov.info --legend --output-directory=./coverage
+```
+
+You can check out the coverage statistics by opening `coverage/index.html`.
+
 
 ## Preliminary Results
 I tried to handpick good thresholds that select the best algorithm available for any scenario considered. This approach has two main downfalls:

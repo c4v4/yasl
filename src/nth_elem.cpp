@@ -180,7 +180,7 @@ void run_test_indirect(char const (&name)[N], cav::Sorter<>& sorter, int sub_siz
 int main(int argc, char const** argv) {
     auto args = cav::make_span(argv, argc);
 
-    auto sorter   = cav::make_sorter();
+    auto sorter   = cav::Sorter<>();
     int  sub_size = std::stoi(args[1]);
 
     fmt::print("type         length   samples            range   cav-sort    rdx-nth  dutch-nth   "
