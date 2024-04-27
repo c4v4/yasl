@@ -329,11 +329,6 @@ public:
 };
 
 template <typename SzT = uint32_t, typename AlcT = std::allocator<char>>
-inline Sorter<SzT, AlcT> make_sorter() {
-    return Sorter<SzT, AlcT>();
-}
-
-template <typename SzT = uint32_t, typename AlcT = std::allocator<char>>
 inline Sorter<SzT, no_cvr<AlcT>> make_sorter(AlcT&& allocator) {
     return Sorter<SzT, no_cvr<AlcT>>{std::forward<AlcT>(allocator)};
 }
