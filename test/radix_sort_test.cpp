@@ -10,7 +10,7 @@
 #include <doctest/doctest.h>
 
 #include "Span.hpp"
-#include "tests_utils.hpp"
+#include "../src/ClassType.hpp"
 
 namespace cav {
 

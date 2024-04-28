@@ -154,6 +154,7 @@ static void radix_sort_msd(C1&     cont,
                 assert_sorted(sub_sub_cont, key);
                 continue;
             }
+            // TODO(cava): consider calling the lsd radix sort when few bytes remains
             auto sub_sub_buff = make_span(sub_buff, sub_sub_beg, sub_counts[ss]);
             radix_sort_msd<SzT>(sub_sub_cont, sub_sub_buff, key, b - 2);
             assert_sorted(sub_sub_cont, key);

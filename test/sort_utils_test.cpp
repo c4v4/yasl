@@ -5,7 +5,7 @@
 #include <cstdint>
 
 #include "Span.hpp"
-#include "tests_utils.hpp"
+#include "../src/ClassType.hpp"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
 

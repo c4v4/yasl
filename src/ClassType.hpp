@@ -7,11 +7,11 @@
 #include "limits.hpp"
 
 namespace cav {
-template <typename T>
+template <typename T, std::size_t Nbytes = 32>
 class ClassType {
 private:
     T    elem;
-    char padding[32 - sizeof(T)] = {};
+    char padding[Nbytes - sizeof(T)] = {};
 
 public:
     ~ClassType() {
