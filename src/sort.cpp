@@ -9,21 +9,11 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
-#include <random>
 #include <vector>
 
+#include "ClassType.hpp"
 #include "Span.hpp"
 #include "limits.hpp"
-
-template <typename T, size_t K>
-struct Fat {
-    T    elem;
-    char data[K - sizeof(T)];
-
-    constexpr bool operator<(Fat const& other) const noexcept {
-        return elem < other.elem;
-    }
-};
 
 template <typename T, typename U>
 __attribute__((noinline)) void sort_sequence(T&&                     sorter,
@@ -141,9 +131,9 @@ void run_test_fat(char const (&name)[N], cav::Sorter<>& sorter, int sub_size, in
         return min + rand_val * (max - min);
     };
 
-    auto origin = std::vector<Fat<T, P>>(tot_elems);
+    auto origin = std::vector<cav::ClassType<T, P>>(tot_elems);
     for (int i = 0; i < tot_elems; ++i)
-        origin[i] = Fat<T, P>{static_cast<T>(dis()), {}};
+        origin[i] = cav::ClassType<T, P>{static_cast<T>(dis())};
 
 
     fmt::print("{:9} {:9} {:9} [{:7.1},{:6.1}]",
@@ -152,8 +142,8 @@ void run_test_fat(char const (&name)[N], cav::Sorter<>& sorter, int sub_size, in
                tot_elems / sub_size,
                double(min),
                double(max));
-    run_test_loop(name, sorter, origin, sub_size, tot_elems, [](Fat<T, P> const& a) {
-        return a.elem;
+    run_test_loop(name, sorter, origin, sub_size, tot_elems, [](cav::ClassType<T, P> const& a) {
+        return T(a);
     });
 }
 

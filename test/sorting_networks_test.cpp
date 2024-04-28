@@ -10,7 +10,7 @@
 #define CAV_MAX_NET_SIZE 32U
 #include "Span.hpp"
 #include "sorting_networks.hpp"
-#include "tests_utils.hpp"
+#include "../src/ClassType.hpp"
 
 namespace cav {
 
